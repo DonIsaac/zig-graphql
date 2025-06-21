@@ -1,12 +1,13 @@
 //! GraphQL AST data structure
 const std = @import("std");
+const Span = @import("Span.zig").Span;
 
 const Ast = @This();
 
 /// Represents a complete GraphQL document
 pub const Document = struct {
     definitions: []Definition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A definition in a GraphQL document
@@ -28,7 +29,7 @@ pub const OperationDefinition = struct {
     variable_definitions: ?[]VariableDefinition,
     directives: ?[]Directive,
     selection_set: SelectionSet,
-    loc: ?Location = null,
+    loc: Span.Optional,
 };
 
 /// The type of operation
@@ -41,7 +42,7 @@ pub const OperationType = enum {
 /// A selection set containing fields, fragment spreads, and inline fragments
 pub const SelectionSet = struct {
     selections: []Selection,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A selection in a selection set
@@ -58,14 +59,14 @@ pub const Field = struct {
     arguments: ?[]Argument,
     directives: ?[]Directive,
     selection_set: ?SelectionSet,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A fragment spread
 pub const FragmentSpread = struct {
     name: Name,
     directives: ?[]Directive,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// An inline fragment
@@ -73,7 +74,7 @@ pub const InlineFragment = struct {
     type_condition: ?NamedType,
     directives: ?[]Directive,
     selection_set: SelectionSet,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A fragment definition
@@ -82,7 +83,7 @@ pub const FragmentDefinition = struct {
     type_condition: NamedType,
     directives: ?[]Directive,
     selection_set: SelectionSet,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A variable definition
@@ -91,27 +92,27 @@ pub const VariableDefinition = struct {
     type: Type,
     default_value: ?Value,
     directives: ?[]Directive,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A variable reference
 pub const Variable = struct {
     name: Name,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A field argument
 pub const Argument = struct {
     name: Name,
     value: Value,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A directive
 pub const Directive = struct {
     name: Name,
     arguments: ?[]Argument,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A GraphQL value
@@ -130,85 +131,87 @@ pub const Value = union(enum) {
 /// An integer value
 pub const IntValue = struct {
     value: []const u8,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A float value
 pub const FloatValue = struct {
     value: []const u8,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A string value
 pub const StringValue = struct {
     value: []const u8,
     block: bool, // true for block strings ("""), false for regular strings
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A boolean value
 pub const BooleanValue = struct {
     value: bool,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A null value
 pub const NullValue = struct {
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// An enum value
 pub const EnumValue = struct {
     value: Name,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A list value
 pub const ListValue = struct {
     values: []Value,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// An object value
 pub const ObjectValue = struct {
     fields: []ObjectField,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A field in an object value
 pub const ObjectField = struct {
     name: Name,
     value: Value,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A GraphQL type
 pub const Type = union(enum) {
     named: NamedType,
-    list: *Type,
-    non_null: *Type,
+    list: ListType,
+    non_null: NonNullType,
+};
+
+/// A list type
+pub const ListType = struct {
+    type: Type,
+    loc: Span.Optional = Span.Optional.init(null),
+};
+
+/// A non-null type
+pub const NonNullType = struct {
+    type: Type,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A named type
 pub const NamedType = struct {
     name: Name,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// A name token
 pub const Name = struct {
     value: []const u8,
-    loc: ?Location = null,
-};
-
-/// Source location information
-pub const Location = struct {
-    start: usize,
-    end: usize,
-    start_line: usize,
-    start_column: usize,
-    end_line: usize,
-    end_column: usize,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Type system definitions and extensions
@@ -223,8 +226,8 @@ pub const TypeSystemDefinition = union(enum) {
     scalar: ScalarTypeDefinition,
     object: ObjectTypeDefinition,
     interface: InterfaceTypeDefinition,
-    union: UnionTypeDefinition,
-    enum: EnumTypeDefinition,
+    @"union": UnionTypeDefinition,
+    @"enum": EnumTypeDefinition,
     input_object: InputObjectTypeDefinition,
     directive: DirectiveDefinition,
 };
@@ -235,8 +238,8 @@ pub const TypeSystemExtension = union(enum) {
     scalar: ScalarTypeExtension,
     object: ObjectTypeExtension,
     interface: InterfaceTypeExtension,
-    union: UnionTypeExtension,
-    enum: EnumTypeExtension,
+    @"union": UnionTypeExtension,
+    @"enum": EnumTypeExtension,
     input_object: InputObjectTypeExtension,
 };
 
@@ -245,21 +248,21 @@ pub const SchemaDefinition = struct {
     description: ?StringValue,
     directives: ?[]Directive,
     operation_types: []RootOperationTypeDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Schema extension
 pub const SchemaExtension = struct {
     directives: ?[]Directive,
     operation_types: ?[]RootOperationTypeDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Root operation type definition
 pub const RootOperationTypeDefinition = struct {
     operation_type: OperationType,
     type: NamedType,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Scalar type definition
@@ -267,14 +270,14 @@ pub const ScalarTypeDefinition = struct {
     description: ?StringValue,
     name: Name,
     directives: ?[]Directive,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Scalar type extension
 pub const ScalarTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Object type definition
@@ -284,7 +287,7 @@ pub const ObjectTypeDefinition = struct {
     interfaces: ?[]NamedType,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Object type extension
@@ -293,7 +296,7 @@ pub const ObjectTypeExtension = struct {
     interfaces: ?[]NamedType,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Interface type definition
@@ -303,7 +306,7 @@ pub const InterfaceTypeDefinition = struct {
     interfaces: ?[]NamedType,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Interface type extension
@@ -312,7 +315,7 @@ pub const InterfaceTypeExtension = struct {
     interfaces: ?[]NamedType,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Union type definition
@@ -321,7 +324,7 @@ pub const UnionTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     types: ?[]NamedType,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Union type extension
@@ -329,7 +332,7 @@ pub const UnionTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     types: ?[]NamedType,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Enum type definition
@@ -338,7 +341,7 @@ pub const EnumTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     values: ?[]EnumValueDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Enum type extension
@@ -346,7 +349,7 @@ pub const EnumTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     values: ?[]EnumValueDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Input object type definition
@@ -355,7 +358,7 @@ pub const InputObjectTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     fields: ?[]InputValueDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Input object type extension
@@ -363,7 +366,7 @@ pub const InputObjectTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     fields: ?[]InputValueDefinition,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Directive definition
@@ -373,7 +376,7 @@ pub const DirectiveDefinition = struct {
     arguments: ?[]InputValueDefinition,
     repeatable: bool,
     locations: []DirectiveLocation,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Field definition
@@ -383,7 +386,7 @@ pub const FieldDefinition = struct {
     arguments: ?[]InputValueDefinition,
     type: Type,
     directives: ?[]Directive,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Input value definition
@@ -393,7 +396,7 @@ pub const InputValueDefinition = struct {
     type: Type,
     default_value: ?Value,
     directives: ?[]Directive,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Enum value definition
@@ -401,7 +404,7 @@ pub const EnumValueDefinition = struct {
     description: ?StringValue,
     value: EnumValue,
     directives: ?[]Directive,
-    loc: ?Location = null,
+    loc: Span.Optional = Span.Optional.init(null),
 };
 
 /// Directive location
@@ -423,8 +426,8 @@ pub const DirectiveLocation = enum {
     field_definition,
     argument_definition,
     interface,
-    union,
-    enum,
+    @"union",
+    @"enum",
     enum_value,
     input_object,
     input_field_definition,
@@ -443,15 +446,8 @@ pub fn newName(value: []const u8) Name {
 }
 
 /// Utility function to create a new location
-pub fn newLocation(start: usize, end: usize, start_line: usize, start_column: usize, end_line: usize, end_column: usize) Location {
-    return Location{
-        .start = start,
-        .end = end,
-        .start_line = start_line,
-        .start_column = start_column,
-        .end_line = end_line,
-        .end_column = end_column,
-    };
+pub fn newLocation(start: u32, end: u32) Span {
+    return Span{ .start = start, .end = end };
 }
 
 /// Utility function to create a new selection set
