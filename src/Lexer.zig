@@ -1,6 +1,7 @@
 const Lexer = @This();
 
 pub const Token = @import("Lexer/Token.zig");
+const tables = @import("Lexer/tables.zig");
 
 errors: std.ArrayListUnmanaged(Diagnostic),
 allocator: Allocator,
@@ -21,6 +22,21 @@ pub fn init(allocator: Allocator, source: []const u8) Lexer {
         .curr = 0,
     };
 }
+
+pub fn next(self: *Lexer) !?Token {
+    if (self.curr >= self.source.len) {
+        @branchHint(.unlikely);
+        return null;
+    }
+
+    const byte = self.currByte();
+    const handler = tables.ASCII_TABLE[byte];
+    @call(.auto, handler, .{ self, byte });
+    return self.endTok();
+    // handler(self, byte);
+}
+
+// =============================================================================
 
 /// Start a new token
 ///
@@ -44,12 +60,18 @@ pub inline fn span(self: *Lexer) Span {
     return Span{ .start = self.tok.span.start, .end = self.curr };
 }
 
+/// Get the current byte in the source.
+/// 
+/// ## Panics
+/// If the Lexer has reached the end of the source file.
 pub inline fn currByte(self: *Lexer) u8 {
     return self.source[self.curr];
 }
+
+/// Peek the next byte in the source. Returns `null` if the end of the source is reached.
 pub inline fn peek(self: *Lexer) ?u8 {
-    const next = self.curr + 1;
-    return if (next >= self.source.len) null else self.source[next];
+    const next_pos = self.curr + 1;
+    return if (next_pos >= self.source.len) null else self.source[next_pos];
 }
 
 
@@ -58,9 +80,9 @@ pub inline fn bump(self: *Lexer) void {
     self.curr += 1;
 }
 
-pub fn expectUnsafe(self: *Lexer, byte: u8) callconv(util.callconv_inline) void {
-    assert(self.curr[])
-} 
+// pub fn expectUnsafe(self: *Lexer, byte: u8) callconv(util.callconv_inline) void {
+//     assert(self.curr[])
+// } 
 
 // ============================== ERROR HANDLING ===============================
 
@@ -78,7 +100,7 @@ pub fn fatalError(
 
     const diag = Diagnostic.init(self.span(), msg);
     self.errors.append(self.allocator, diag) catch unreachable;
-    self.curr = self.source.len;
+    self.curr = @intCast(self.source.len);
     if (util.is_debug) {
         self.tok = Token.empty;
     }
@@ -103,6 +125,11 @@ pub fn err(
     self.errors.append(self.allocator, diag) catch unreachable;
 }
 
+pub const Error = error{
+    UnexpectedByte,
+    OutOfMemory,
+};
+
 const std = @import("std");
 const Diagnostic = @import("Diagnostic.zig");
 const Span = @import("Span.zig");
@@ -110,3 +137,7 @@ const util = @import("util.zig");
 
 const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
+
+test {
+    _ = @import("Lexer/test/Lexer.test.zig");
+}

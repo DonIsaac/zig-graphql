@@ -25,21 +25,49 @@ pub const Kind = enum {
     extend,
 
     // Punctuators
-    bang,
-    dollar,
-    percent,
-    amp,
-    single_quote,
+    bang, // !
+    dollar, // $
+    percent, // %
+    amp, // &
+    single_quote, // '
     l_paren, // (
     r_paren, // )
-    l_bracket, // [
-    r_bracket, // ]
-    l_curly, // {
-    r_curly, // }
+    asterisk, // *
+    plus, // +
+    comma, // ,
+    minus, // -
+    period, // .
+    forward_slash, // /
     colon, // :
+    semicolon, // ;
+    less_than, // <
     equal, // =
+    greater_than, // >
+    question_mark, // ?
     at, // @
+    l_bracket, // [
+    backslash, // \
+    r_bracket, // ]
+    caret, // ^
+    underscore, // _
+    backtick, // `
+    l_curly, // {
     pipe, // |
+    r_curly, // }
+    tilde, // ~
+
+    // String and comment tokens
+    double_quote, // "
+    hash, // #
+
+    // Name and value tokens
+    name,
+    int_value,
+    float_value,
+    string_value,
+    block_string_value,
+    boolean_value,
+    null_value,
 
     // whitespace, etc
     eof,

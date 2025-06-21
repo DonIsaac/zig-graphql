@@ -1,0 +1,17 @@
+# Name: example-3.graphql
+{
+  user(id: 4) {
+    name
+  }
+}
+
+====
+# Name: example-5.graphql
+
+mutation {
+  likeStory(storyID: 12345) {
+    story {
+      likeCount
+    }
+  }
+}
