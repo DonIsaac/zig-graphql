@@ -1,0 +1,21 @@
+# build artifacts
+zig-out
+.zig-cache
+
+# temp files
+tmp
+*.tmp
+*.tmp
+
+# macOS
+# misc
+.DS_Store
+
+# editor files
+.cursor
+.cursorrules
+.cursorignore
+*.swp
+*.swo
+.idea
+.vscode/settings.json
