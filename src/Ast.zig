@@ -7,7 +7,7 @@ const Ast = @This();
 /// Represents a complete GraphQL document
 pub const Document = struct {
     definitions: []Definition,
-    loc: Span,
+    span: Span,
 };
 
 /// A definition in a GraphQL document
@@ -28,8 +28,8 @@ pub const OperationDefinition = struct {
     name: ?Name,
     variable_definitions: ?[]VariableDefinition,
     directives: ?[]Directive,
-    selection_set: SelectionSet,
-    loc: Span,
+    selection_set: Selection.Set,
+    span: Span,
 };
 
 /// The type of operation
@@ -39,42 +39,52 @@ pub const OperationType = enum {
     subscription,
 };
 
-/// A selection set containing fields, fragment spreads, and inline fragments
-pub const SelectionSet = struct {
-    selections: []Selection,
-    loc: Span,
-};
-
 /// A selection in a selection set
 pub const Selection = union(enum) {
     field: Field,
     fragment_spread: FragmentSpread,
     inline_fragment: InlineFragment,
-};
 
-/// A field selection
-pub const Field = struct {
-    alias: ?Name,
-    name: Name,
-    arguments: ?[]Argument,
-    directives: ?[]Directive,
-    selection_set: ?SelectionSet,
-    loc: Span,
-};
+    /// A selection set containing fields, fragment spreads, and inline fragments
+    pub const Set = struct {
+        selections: []Selection,
+        // span: Span,
+        pub inline fn span(self: Set) Span {
+            if (self.selections.len == 0) {
+                @branchHint(.unlikely);
+                return Span.empty;
+            }
 
-/// A fragment spread
-pub const FragmentSpread = struct {
-    name: Name,
-    directives: ?[]Directive,
-    loc: Span,
-};
+            const first = self.selections[0].span();
+            const last = self.selections[0].span();
+            return Span{ .start = first.start, .end = last.end };
+        }
+    };
 
-/// An inline fragment
-pub const InlineFragment = struct {
-    type_condition: ?Type.Named,
-    directives: ?[]Directive,
-    selection_set: SelectionSet,
-    loc: Span,
+    /// A field selection
+    pub const Field = struct {
+        alias: ?Name,
+        name: Name,
+        arguments: ?[]Argument,
+        directives: ?[]Directive,
+        selection_set: ?Selection.Set,
+        span: Span,
+    };
+
+    /// A fragment spread
+    pub const FragmentSpread = struct {
+        name: Name,
+        directives: ?[]Directive,
+        span: Span,
+    };
+
+    /// An inline fragment
+    pub const InlineFragment = struct {
+        type_condition: ?Type.Named,
+        directives: ?[]Directive,
+        selection_set: Selection.Set,
+        span: Span,
+    };
 };
 
 /// A fragment definition
@@ -82,8 +92,8 @@ pub const FragmentDefinition = struct {
     name: Name,
     type_condition: Type.Named,
     directives: ?[]Directive,
-    selection_set: SelectionSet,
-    loc: Span,
+    selection_set: Selection.Set,
+    span: Span,
 };
 
 /// A variable definition
@@ -92,27 +102,27 @@ pub const VariableDefinition = struct {
     type: Type,
     default_value: ?Value,
     directives: ?[]Directive,
-    loc: Span,
+    span: Span,
 };
 
 /// A variable reference
 pub const Variable = struct {
     name: Name,
-    loc: Span,
+    span: Span,
 };
 
 /// A field argument
 pub const Argument = struct {
     name: Name,
     value: Value,
-    loc: Span,
+    span: Span,
 };
 
 /// A directive
 pub const Directive = struct {
     name: Name,
     arguments: ?[]Argument,
-    loc: Span,
+    span: Span,
 };
 
 /// A GraphQL value
@@ -130,54 +140,63 @@ pub const Value = union(enum) {
     /// An integer value
     pub const Int = struct {
         value: []const u8,
-        loc: Span,
+        span: Span,
     };
 
     /// A float value
     pub const Float = struct {
         value: []const u8,
-        loc: Span,
+        span: Span,
     };
 
     /// A string value
     pub const String = struct {
         value: []const u8,
         block: bool, // true for block strings ("""), false for regular strings
-        loc: Span,
+        span: Span,
     };
 
     /// A boolean value
     pub const Boolean = struct {
         value: bool,
-        loc: Span,
+        pos: Span.Offset,
+        pub inline fn span(self: Boolean) Span {
+            return if (self.value)
+                self.pos.keywordSpan("true")
+            else
+                self.pos.keywordSpan("false");
+        }
     };
 
     /// A null value
     pub const Null = struct {
-        loc: Span,
+        pos: Span.Offset,
+        pub inline fn span(self: Null) Span {
+            return self.pos.keywordSpan("null");
+        }
     };
 
     /// An enum value
     pub const Enum = struct {
         value: Name,
-        loc: Span,
+        span: Span,
     };
 
     /// A list value
     pub const List = struct {
         values: []Value,
-        loc: Span,
+        span: Span,
     };
 
     /// An object value
     pub const Object = struct {
         fields: []Object.Field,
-        loc: Span,
+        span: Span,
         /// A field in an object value
         pub const Field = struct {
             name: Name,
             value: Value,
-            loc: Span,
+            span: Span,
         };
     };
 };
@@ -211,7 +230,10 @@ pub const Type = union(enum) {
 /// A name token
 pub const Name = struct {
     value: []const u8,
-    span: Span,
+    pos: Span.Offset,
+    pub inline fn span(self: Name) Span {
+        return self.pos.spanSized(@intCast(self.value.len));
+    }
 };
 
 /// Type system definitions and extensions
@@ -248,21 +270,21 @@ pub const SchemaDefinition = struct {
     description: ?Value.String,
     directives: ?[]Directive,
     operation_types: []RootOperationTypeDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Schema extension
 pub const SchemaExtension = struct {
     directives: ?[]Directive,
     operation_types: ?[]RootOperationTypeDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Root operation type definition
 pub const RootOperationTypeDefinition = struct {
     operation_type: OperationType,
     type: Type.Named,
-    loc: Span,
+    span: Span,
 };
 
 /// Scalar type definition
@@ -270,14 +292,14 @@ pub const ScalarTypeDefinition = struct {
     description: ?Value.String,
     name: Name,
     directives: ?[]Directive,
-    loc: Span,
+    span: Span,
 };
 
 /// Scalar type extension
 pub const ScalarTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
-    loc: Span,
+    span: Span,
 };
 
 /// Object type definition
@@ -287,7 +309,7 @@ pub const ObjectTypeDefinition = struct {
     interfaces: ?[]Type.Named,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Object type extension
@@ -296,7 +318,7 @@ pub const ObjectTypeExtension = struct {
     interfaces: ?[]Type.Named,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Interface type definition
@@ -306,7 +328,7 @@ pub const InterfaceTypeDefinition = struct {
     interfaces: ?[]Type.Named,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Interface type extension
@@ -315,7 +337,7 @@ pub const InterfaceTypeExtension = struct {
     interfaces: ?[]Type.Named,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Union type definition
@@ -324,7 +346,7 @@ pub const UnionTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     types: ?[]Type.Named,
-    loc: Span,
+    span: Span,
 };
 
 /// Union type extension
@@ -332,7 +354,7 @@ pub const UnionTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     types: ?[]Type.Named,
-    loc: Span,
+    span: Span,
 };
 
 /// Enum type definition
@@ -342,7 +364,7 @@ pub const EnumTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     values: ?[]EnumValueDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Enum type extension
@@ -350,7 +372,7 @@ pub const EnumTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     values: ?[]EnumValueDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Input object type definition
@@ -359,7 +381,7 @@ pub const InputObjectTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     fields: ?[]InputValueDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Input object type extension
@@ -367,7 +389,7 @@ pub const InputObjectTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     fields: ?[]InputValueDefinition,
-    loc: Span,
+    span: Span,
 };
 
 /// Directive definition
@@ -377,7 +399,7 @@ pub const DirectiveDefinition = struct {
     arguments: ?[]InputValueDefinition,
     repeatable: bool,
     locations: []DirectiveLocation,
-    loc: Span,
+    span: Span,
 };
 
 /// Field definition
@@ -387,7 +409,7 @@ pub const FieldDefinition = struct {
     arguments: ?[]InputValueDefinition,
     type: Type,
     directives: ?[]Directive,
-    loc: Span,
+    span: Span,
 };
 
 /// Input value definition
@@ -397,7 +419,7 @@ pub const InputValueDefinition = struct {
     type: Type,
     default_value: ?Value,
     directives: ?[]Directive,
-    loc: Span,
+    span: Span,
 };
 
 /// Enum value definition
@@ -405,7 +427,7 @@ pub const EnumValueDefinition = struct {
     description: ?Value.String,
     value: Value.Enum,
     directives: ?[]Directive,
-    loc: Span,
+    span: Span,
 };
 
 /// Directive location
