@@ -17,15 +17,15 @@ const ByteHandler = *const fn (lexer: *Lexer, byte: u8) Token.Kind;
 
 // zig-fmt: off
 pub const ASCII_TABLE: [128]ByteHandler = [_]ByteHandler{
-    //  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+//  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, WSP, LF_, VT_, FF_, CR_, ERR, ERR, // 0
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
     WSP, BNG, QUO, HSH, DOL, PCT, AMP, SQT, LPA, RPA, AST, PLS, COM, MIN, DOT, FSL, // 2
     DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LTH, EQU, GTH, QUE, // 3
     AT_, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, // 4
     LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LBR, BSL, RBR, CRT, USC, // 5
-    BTK, LET, LET, LET, LET, LET, L_e, LET, LET, LET, LET, LET, LET, L_m, LET, LET, // 6
-    LET, L_q, LET, LET, LET, LET, L_u, LET, LET, LET, LET, LCB, PIP, RCB, TLD, ERR, // 7
+    BTK, LET, LET, LET, LET, L_e, LET, LET, LET, LET, LET, LET, LET, L_m, LET, LET, // 6
+    LET, L_q, LET, L_s, L_t, LET, L_u, LET, LET, LET, LET, LCB, PIP, RCB, TLD, ERR, // 7
 };
 // zig-fmt: on
 
@@ -96,9 +96,10 @@ fn HSH(lexer: *Lexer, _: u8) Token.Kind {
             '\n' => {
                 return .comment;
             },
+            else => lexer.bump(),
         }
     }
-    return .hash;
+    return .comment;
 }
 
 /// Dollar (0x24) - $
@@ -278,47 +279,44 @@ fn TLD(lexer: *Lexer, _: u8) Token.Kind {
 // ============================== LETTERS & DIGITS ==============================
 
 /// Lowercase e
-fn L_e(lexer: *Lexer, _: u8) Token.Kind {
-    lexer.expect'e');
-    return ident.isKeywordWithoutFirstChar(
-        lexer,
-        &[_]struct { []const u8, Token.Kind }{
-            .{ "num", .@"enum" },
-        },
-    ) orelse lexNameRemaining(lexer);
-}
+const L_e: ByteHandler = keywordOrName('e', &[_]struct { []const u8, Token.Kind }{
+    .{ "num", .@"enum" },
+});
 
-// Lowercase m
-fn L_m(lexer: *Lexer, _: u8) Token.Kind {
-    lexer.expect'm');
-    return ident.isKeywordWithoutFirstChar(
-        lexer,
-        &[_]struct { []const u8, Token.Kind }{
-            .{ "utation", .mutation },
-        },
-    ) orelse lexNameRemaining(lexer);
-}
+/// Lowercase m
+const L_m: ByteHandler = keywordOrName('m', &[_]struct { []const u8, Token.Kind }{
+    .{ "utation", .mutation },
+});
 
 /// Lowercase q
-fn L_q(lexer: *Lexer, _: u8) Token.Kind {
-    lexer.expect'q');
-    const rest = lexer.remaining();
-    if (mem.startsWith(u8, rest, "uery")) {
-        lexer.advanceBy(@intCast("uery".len));
-        return .query;
-    }
-    return lexNameRemaining(lexer);
-}
+const L_q: ByteHandler = keywordOrName('q', &[_]struct { []const u8, Token.Kind }{
+    .{ "uery", .query },
+});
+
+/// Lowercase s
+const L_s: ByteHandler = keywordOrName('s', &[_]struct { []const u8, Token.Kind }{
+    .{ "ubscription", .subscription },
+    .{ "chema", .schema },
+});
+
+/// Lowercase t
+const L_t: ByteHandler = keywordOrName('t', &[_]struct { []const u8, Token.Kind }{
+    .{ "ype", .type },
+});
 
 /// Lowercase u
-fn L_u(lexer: *Lexer, _: u8) Token.Kind {
-    lexer.expect'u');
-    return ident.isKeywordWithoutFirstChar(
-        lexer,
-        &[_]struct { []const u8, Token.Kind }{
-            .{ "nion", .@"union" },
-        },
-    ) orelse lexNameRemaining(lexer);
+const L_u: ByteHandler = keywordOrName('u', &[_]struct { []const u8, Token.Kind }{
+    .{ "nion", .@"union" },
+});
+
+fn keywordOrName(comptime first: u8, comptime kws: anytype) ByteHandler {
+    const gen = struct {
+        pub fn byteHandler(lexer: *Lexer, _: u8) Token.Kind {
+            lexer.expect(first);
+            return ident.isKeywordWithoutFirstChar(lexer, kws) orelse lexNameRemaining(lexer);
+        }
+    };
+    return gen.byteHandler;
 }
 
 /// Letters (0x41-0x5A, 0x61-0x7A) - A-Z, a-z

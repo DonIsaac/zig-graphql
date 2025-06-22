@@ -3,6 +3,7 @@ const Lexer = @import("../../Lexer.zig");
 
 const testing = std.testing;
 const allocator = std.testing.allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
 
 test "valid examples" {
     const valid = @embedFile("fixtures/valid.graphql");
@@ -10,7 +11,7 @@ test "valid examples" {
     _ = &files;
 
     while (files.next()) |f| {
-        var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+        var arena = ArenaAllocator.init(allocator);
         defer arena.deinit();
         const src = std.mem.trim(u8, f, &std.ascii.whitespace);
         var lexer = Lexer.init(arena.allocator(), src);
@@ -31,27 +32,27 @@ test "spot check - valid" {
     const Kind = Lexer.Token.Kind;
     const TestCase = struct { []const u8, []const Kind };
     const test_cases = &[_]TestCase{
-        .{
-            "{}",
-            &[_]Kind{ .l_curly, .r_curly },
-        },
+        .{ "", &[_]Kind{} },
+        .{ "{}", &[_]Kind{ .l_curly, .r_curly } },
+        .{ "#foo\n", &[_]Kind{.comment} },
+        .{ "#foo", &[_]Kind{.comment} },
         .{
             "query MyQuery {}",
             &[_]Kind{ .query, .name, .l_curly, .r_curly },
         },
         .{
             "mutation Foo($bar: String!) { bar }",
-            &[_]Kind{ .mutation, .name, .l_paren, .name, .colon, .name, .r_paren, .l_curly, .name, .r_curly },
+            &[_]Kind{ .mutation, .name, .l_paren, .dollar, .name, .colon, .name, .bang, .r_paren, .l_curly, .name, .r_curly },
         },
         .{
             "enum Foo { A, B, C }",
             &[_]Kind{ .@"enum", .name, .l_curly, .name, .comma, .name, .comma, .name, .r_curly },
-        }
+        },
     };
 
     for (test_cases) |tc| {
         const src, const expected = tc;
-        var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+        var arena = ArenaAllocator.init(allocator);
         defer arena.deinit();
         var lexer = Lexer.init(arena.allocator(), src);
 

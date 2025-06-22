@@ -27,10 +27,11 @@ pub fn isNameContinue(c: u8) bool {
 }
 
 // pub fn isKeywordWithoutFirstChar(lexer: *const Lexer, comptime kws: []const struct{ []const u8, Token.Kind }) ?Token.Kind {
-pub fn isKeywordWithoutFirstChar(lexer: *const Lexer, comptime kws: anytype) ?Token.Kind {
+pub fn isKeywordWithoutFirstChar(lexer: *Lexer, comptime kws: anytype) ?Token.Kind {
     inline for (kws) |kw| {
         const suffix, const kind = kw;
         if (mem.startsWith(u8, lexer.remaining(), suffix)) {
+            lexer.advanceBy(@intCast(suffix.len));
             return kind;
         }
     }

@@ -48,13 +48,14 @@ fn nextImpl(self: *Lexer, comptime skip_ignored: Ignore) !?Token {
         self.startTok();
         switch (tables.handleASCIIByte(self, byte)) {
             .undetermined => {
+                @branchHint(.cold);
                 _ = self.endTok(.undetermined);
                 return error.UnexpectedByte;
             },
             .whitespace, .line_terminator => |kind| if (skip_ignored.gte(.Whitespace)) continue else {
                 return self.endTok(kind);
             },
-            .comma, .comment, .block_comment => |kind| if (skip_ignored.lt(.Ignored)) continue else {
+            .comma, .comment, .block_comment => |kind| if (skip_ignored == .Ignored) continue else {
                 return self.endTok(kind);
             },
             else => |kind| {
