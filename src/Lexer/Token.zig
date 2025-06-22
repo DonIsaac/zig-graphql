@@ -27,11 +27,15 @@ pub const Kind = enum {
     // Punctuators
     bang, // !
     dollar, // $
+    l_paren, // (
+    r_paren, // )
+    l_bracket, // [
+    r_bracket, // ]
+    l_curly, // {
+    r_curly, // }
     percent, // %
     amp, // &
     single_quote, // '
-    l_paren, // (
-    r_paren, // )
     asterisk, // *
     plus, // +
     comma, // ,
@@ -45,15 +49,11 @@ pub const Kind = enum {
     greater_than, // >
     question_mark, // ?
     at, // @
-    l_bracket, // [
-    backslash, // \
-    r_bracket, // ]
     caret, // ^
     underscore, // _
     backtick, // `
-    l_curly, // {
+    backslash, // \
     pipe, // |
-    r_curly, // }
     tilde, // ~
 
     // String and comment tokens

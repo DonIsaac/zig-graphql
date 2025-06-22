@@ -7,7 +7,7 @@ const Ast = @This();
 /// Represents a complete GraphQL document
 pub const Document = struct {
     definitions: []Definition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A definition in a GraphQL document
@@ -29,7 +29,7 @@ pub const OperationDefinition = struct {
     variable_definitions: ?[]VariableDefinition,
     directives: ?[]Directive,
     selection_set: SelectionSet,
-    loc: Span.Optional,
+    loc: Span,
 };
 
 /// The type of operation
@@ -42,7 +42,7 @@ pub const OperationType = enum {
 /// A selection set containing fields, fragment spreads, and inline fragments
 pub const SelectionSet = struct {
     selections: []Selection,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A selection in a selection set
@@ -59,14 +59,14 @@ pub const Field = struct {
     arguments: ?[]Argument,
     directives: ?[]Directive,
     selection_set: ?SelectionSet,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A fragment spread
 pub const FragmentSpread = struct {
     name: Name,
     directives: ?[]Directive,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// An inline fragment
@@ -74,7 +74,7 @@ pub const InlineFragment = struct {
     type_condition: ?NamedType,
     directives: ?[]Directive,
     selection_set: SelectionSet,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A fragment definition
@@ -83,7 +83,7 @@ pub const FragmentDefinition = struct {
     type_condition: NamedType,
     directives: ?[]Directive,
     selection_set: SelectionSet,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A variable definition
@@ -92,27 +92,27 @@ pub const VariableDefinition = struct {
     type: Type,
     default_value: ?Value,
     directives: ?[]Directive,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A variable reference
 pub const Variable = struct {
     name: Name,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A field argument
 pub const Argument = struct {
     name: Name,
     value: Value,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A directive
 pub const Directive = struct {
     name: Name,
     arguments: ?[]Argument,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A GraphQL value
@@ -131,87 +131,87 @@ pub const Value = union(enum) {
 /// An integer value
 pub const IntValue = struct {
     value: []const u8,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A float value
 pub const FloatValue = struct {
     value: []const u8,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A string value
 pub const StringValue = struct {
     value: []const u8,
     block: bool, // true for block strings ("""), false for regular strings
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A boolean value
 pub const BooleanValue = struct {
     value: bool,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A null value
 pub const NullValue = struct {
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// An enum value
 pub const EnumValue = struct {
     value: Name,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A list value
 pub const ListValue = struct {
     values: []Value,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// An object value
 pub const ObjectValue = struct {
     fields: []ObjectField,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A field in an object value
 pub const ObjectField = struct {
     name: Name,
     value: Value,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// A GraphQL type
 pub const Type = union(enum) {
-    named: NamedType,
-    list: ListType,
-    non_null: NonNullType,
-};
+    named: Type.Named,
+    list: Type.List,
+    non_null: Type.NonNull,
 
-/// A list type
-pub const ListType = struct {
-    type: Type,
-    loc: Span.Optional = Span.Optional.init(null),
-};
+    /// A list type
+    pub const List = struct {
+        type: Type,
+        span: Span,
+    };
 
-/// A non-null type
-pub const NonNullType = struct {
-    type: Type,
-    loc: Span.Optional = Span.Optional.init(null),
-};
+    /// A non-null type
+    pub const NonNull = struct {
+        type: Type,
+        span: Span,
+    };
 
-/// A named type
-pub const NamedType = struct {
-    name: Name,
-    loc: Span.Optional = Span.Optional.init(null),
+    /// A named type
+    pub const Named = struct {
+        name: Name,
+        span: Span,
+    };
 };
 
 /// A name token
 pub const Name = struct {
     value: []const u8,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Type system definitions and extensions
@@ -248,21 +248,21 @@ pub const SchemaDefinition = struct {
     description: ?StringValue,
     directives: ?[]Directive,
     operation_types: []RootOperationTypeDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Schema extension
 pub const SchemaExtension = struct {
     directives: ?[]Directive,
     operation_types: ?[]RootOperationTypeDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Root operation type definition
 pub const RootOperationTypeDefinition = struct {
     operation_type: OperationType,
     type: NamedType,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Scalar type definition
@@ -270,14 +270,14 @@ pub const ScalarTypeDefinition = struct {
     description: ?StringValue,
     name: Name,
     directives: ?[]Directive,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Scalar type extension
 pub const ScalarTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Object type definition
@@ -287,7 +287,7 @@ pub const ObjectTypeDefinition = struct {
     interfaces: ?[]NamedType,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Object type extension
@@ -296,7 +296,7 @@ pub const ObjectTypeExtension = struct {
     interfaces: ?[]NamedType,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Interface type definition
@@ -306,7 +306,7 @@ pub const InterfaceTypeDefinition = struct {
     interfaces: ?[]NamedType,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Interface type extension
@@ -315,7 +315,7 @@ pub const InterfaceTypeExtension = struct {
     interfaces: ?[]NamedType,
     directives: ?[]Directive,
     fields: ?[]FieldDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Union type definition
@@ -324,7 +324,7 @@ pub const UnionTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     types: ?[]NamedType,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Union type extension
@@ -332,7 +332,7 @@ pub const UnionTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     types: ?[]NamedType,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Enum type definition
@@ -341,7 +341,7 @@ pub const EnumTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     values: ?[]EnumValueDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Enum type extension
@@ -349,7 +349,7 @@ pub const EnumTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     values: ?[]EnumValueDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Input object type definition
@@ -358,7 +358,7 @@ pub const InputObjectTypeDefinition = struct {
     name: Name,
     directives: ?[]Directive,
     fields: ?[]InputValueDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Input object type extension
@@ -366,7 +366,7 @@ pub const InputObjectTypeExtension = struct {
     name: Name,
     directives: ?[]Directive,
     fields: ?[]InputValueDefinition,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Directive definition
@@ -376,7 +376,7 @@ pub const DirectiveDefinition = struct {
     arguments: ?[]InputValueDefinition,
     repeatable: bool,
     locations: []DirectiveLocation,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Field definition
@@ -386,7 +386,7 @@ pub const FieldDefinition = struct {
     arguments: ?[]InputValueDefinition,
     type: Type,
     directives: ?[]Directive,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Input value definition
@@ -396,7 +396,7 @@ pub const InputValueDefinition = struct {
     type: Type,
     default_value: ?Value,
     directives: ?[]Directive,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Enum value definition
@@ -404,7 +404,7 @@ pub const EnumValueDefinition = struct {
     description: ?StringValue,
     value: EnumValue,
     directives: ?[]Directive,
-    loc: Span.Optional = Span.Optional.init(null),
+    loc: Span,
 };
 
 /// Directive location
@@ -418,7 +418,7 @@ pub const DirectiveLocation = enum {
     fragment_spread,
     inline_fragment,
     variable_definition,
-    
+
     // Type system directive locations
     schema,
     scalar,
@@ -432,167 +432,3 @@ pub const DirectiveLocation = enum {
     input_object,
     input_field_definition,
 };
-
-/// Utility function to create a new document
-pub fn newDocument(allocator: std.mem.Allocator, definitions: []Definition) !Document {
-    return Document{
-        .definitions = try allocator.dupe(Definition, definitions),
-    };
-}
-
-/// Utility function to create a new name
-pub fn newName(value: []const u8) Name {
-    return Name{ .value = value };
-}
-
-/// Utility function to create a new location
-pub fn newLocation(start: u32, end: u32) Span {
-    return Span{ .start = start, .end = end };
-}
-
-/// Utility function to create a new selection set
-pub fn newSelectionSet(allocator: std.mem.Allocator, selections: []Selection) !SelectionSet {
-    return SelectionSet{
-        .selections = try allocator.dupe(Selection, selections),
-    };
-}
-
-/// Utility function to create a new field
-pub fn newField(allocator: std.mem.Allocator, name: Name, alias: ?Name, arguments: ?[]Argument, directives: ?[]Directive, selection_set: ?SelectionSet) !Field {
-    return Field{
-        .name = name,
-        .alias = alias,
-        .arguments = if (arguments) |args| try allocator.dupe(Argument, args) else null,
-        .directives = if (directives) |dirs| try allocator.dupe(Directive, dirs) else null,
-        .selection_set = selection_set,
-    };
-}
-
-/// Utility function to create a new operation definition
-pub fn newOperationDefinition(allocator: std.mem.Allocator, operation_type: OperationType, name: ?Name, variable_definitions: ?[]VariableDefinition, directives: ?[]Directive, selection_set: SelectionSet) !OperationDefinition {
-    return OperationDefinition{
-        .operation_type = operation_type,
-        .name = name,
-        .variable_definitions = if (variable_definitions) |vars| try allocator.dupe(VariableDefinition, vars) else null,
-        .directives = if (directives) |dirs| try allocator.dupe(Directive, dirs) else null,
-        .selection_set = selection_set,
-    };
-}
-
-/// Utility function to create a new fragment definition
-pub fn newFragmentDefinition(allocator: std.mem.Allocator, name: Name, type_condition: NamedType, directives: ?[]Directive, selection_set: SelectionSet) !FragmentDefinition {
-    return FragmentDefinition{
-        .name = name,
-        .type_condition = type_condition,
-        .directives = if (directives) |dirs| try allocator.dupe(Directive, dirs) else null,
-        .selection_set = selection_set,
-    };
-}
-
-/// Utility function to create a new string value
-pub fn newStringValue(value: []const u8, block: bool) StringValue {
-    return StringValue{
-        .value = value,
-        .block = block,
-    };
-}
-
-/// Utility function to create a new int value
-pub fn newIntValue(value: []const u8) IntValue {
-    return IntValue{ .value = value };
-}
-
-/// Utility function to create a new float value
-pub fn newFloatValue(value: []const u8) FloatValue {
-    return FloatValue{ .value = value };
-}
-
-/// Utility function to create a new boolean value
-pub fn newBooleanValue(value: bool) BooleanValue {
-    return BooleanValue{ .value = value };
-}
-
-/// Utility function to create a new null value
-pub fn newNullValue() NullValue {
-    return NullValue{};
-}
-
-/// Utility function to create a new enum value
-pub fn newEnumValue(value: Name) EnumValue {
-    return EnumValue{ .value = value };
-}
-
-/// Utility function to create a new list value
-pub fn newListValue(allocator: std.mem.Allocator, values: []Value) !ListValue {
-    return ListValue{
-        .values = try allocator.dupe(Value, values),
-    };
-}
-
-/// Utility function to create a new object value
-pub fn newObjectValue(allocator: std.mem.Allocator, fields: []ObjectField) !ObjectValue {
-    return ObjectValue{
-        .fields = try allocator.dupe(ObjectField, fields),
-    };
-}
-
-/// Utility function to create a new named type
-pub fn newNamedType(name: Name) NamedType {
-    return NamedType{ .name = name };
-}
-
-/// Utility function to create a new directive
-pub fn newDirective(allocator: std.mem.Allocator, name: Name, arguments: ?[]Argument) !Directive {
-    return Directive{
-        .name = name,
-        .arguments = if (arguments) |args| try allocator.dupe(Argument, args) else null,
-    };
-}
-
-/// Utility function to create a new argument
-pub fn newArgument(name: Name, value: Value) Argument {
-    return Argument{
-        .name = name,
-        .value = value,
-    };
-}
-
-/// Utility function to create a new variable
-pub fn newVariable(name: Name) Variable {
-    return Variable{ .name = name };
-}
-
-/// Utility function to create a new variable definition
-pub fn newVariableDefinition(allocator: std.mem.Allocator, variable: Variable, type: Type, default_value: ?Value, directives: ?[]Directive) !VariableDefinition {
-    return VariableDefinition{
-        .variable = variable,
-        .type = type,
-        .default_value = default_value,
-        .directives = if (directives) |dirs| try allocator.dupe(Directive, dirs) else null,
-    };
-}
-
-/// Utility function to create a new object field
-pub fn newObjectField(name: Name, value: Value) ObjectField {
-    return ObjectField{
-        .name = name,
-        .value = value,
-    };
-}
-
-/// Utility function to create a new fragment spread
-pub fn newFragmentSpread(allocator: std.mem.Allocator, name: Name, directives: ?[]Directive) !FragmentSpread {
-    return FragmentSpread{
-        .name = name,
-        .directives = if (directives) |dirs| try allocator.dupe(Directive, dirs) else null,
-    };
-}
-
-/// Utility function to create a new inline fragment
-pub fn newInlineFragment(allocator: std.mem.Allocator, type_condition: ?NamedType, directives: ?[]Directive, selection_set: SelectionSet) !InlineFragment {
-    return InlineFragment{
-        .type_condition = type_condition,
-        .directives = if (directives) |dirs| try allocator.dupe(Directive, dirs) else null,
-        .selection_set = selection_set,
-    };
-}

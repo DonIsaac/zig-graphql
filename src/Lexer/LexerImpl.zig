@@ -31,6 +31,10 @@ pub fn init(allocator: Allocator, source: []const u8) LexerImpl {
     };
 }
 
+pub fn deinit(self: *LexerImpl) void {
+    self.errors.deinit(self.allocator);
+}
+
 pub const Ignore = enum(u2) {
     None,
     Whitespace,
@@ -42,13 +46,6 @@ pub const Ignore = enum(u2) {
         return @intFromEnum(self) >= @intFromEnum(other);
     }
 };
-
-// pub fn next(self: *LexerImpl) !?Token {
-//     return self.nextImpl(.Whitespace);
-// }
-// pub fn nextNoSkip(self: *LexerImpl) !?Token {
-//     return self.nextImpl(.None);
-// }
 
 pub fn next(self: *LexerImpl, comptime skip_ignored: Ignore) !?Token {
     while (self.curr()) |byte| {

@@ -11,6 +11,10 @@ pub fn init(allocator: Allocator, source: []const u8) Lexer {
     return .{ ._impl = LexerImpl.init(allocator, source) };
 }
 
+pub fn deinit(self: *Lexer) void {
+    self._impl.deinit();
+}
+
 pub fn next(self: *Lexer) !?Token {
     return self._impl.next(.Whitespace);
 }
