@@ -15,9 +15,38 @@ pub fn sized(start: u32, size: u32) Span {
 pub fn eql(self: Span, other: Span) bool {
     return self.start == other.start and self.end == other.end;
 }
+
 pub fn len(self: Span) u32 {
     std.debug.assert(self.start <= self.end);
     return self.end - self.start;
+}
+
+pub fn slice(self: Span, text: []const u8) []const u8 {
+    std.debug.assert(self.start <= self.end);
+    return text[self.start..self.end];
+}
+
+pub fn spanned(thing: anytype) Span {
+    const T = @TypeOf(thing);
+    if (T == Span) return thing;
+    if (T == Span.Optional) return Span.Optional.unwrap(thing);
+
+    return switch (@typeInfo(T)) {
+        .Pointer => |info| switch (info.size) {
+            .one, .c => Span.spanned(info.child),
+            else => @compileError("Span.spanned cannot be used on slices: " ++ @typeName(T)),
+        },
+        .@"struct" => {
+            // thing.span or thing.span()
+            if (@hasField(T, "span")) {
+                return Span.spanned(@field(thing, "span"));
+            }
+            if (@hasDecl(T, "span")) {
+                return @call(.auto, @field(T, "span"), .{});
+            }
+        },
+        else => @compileError("Span.spanned cannot be used on type " ++ @typeName(T)),
+    };
 }
 
 pub const Optional = struct {

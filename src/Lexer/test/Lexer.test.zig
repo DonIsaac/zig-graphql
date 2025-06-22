@@ -23,7 +23,7 @@ test "valid examples" {
             _ = t;
         }
 
-        try testing.expectEqual(lexer.errors.items.len, 0);
+        try testing.expectEqual(lexer._impl.errors.items.len, 0);
     }
 }
 
@@ -45,7 +45,7 @@ test "spot check - valid" {
             &[_]Kind{ .mutation, .name, .l_paren, .dollar, .name, .colon, .name, .bang, .r_paren, .l_curly, .name, .r_curly },
         },
         .{
-            "enum Foo { A, B, C }",
+            "enum Fruit { Apple, Banana, Cherry }",
             &[_]Kind{ .@"enum", .name, .l_curly, .name, .comma, .name, .comma, .name, .r_curly },
         },
     };

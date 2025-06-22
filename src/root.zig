@@ -5,6 +5,7 @@ const std = @import("std");
 const testing = std.testing;
 
 pub const Lexer = @import("Lexer.zig");
+pub const Parser = @import("Parser.zig");
 
 test {
     std.testing.refAllDecls(@This());

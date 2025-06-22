@@ -7,8 +7,8 @@ pub const Token = @import("Lexer/Token.zig");
 
 _impl: LexerImpl,
 
-pub fn init(allocator: Allocator, source: []const u8) Lexer {
-    return .{ ._impl = LexerImpl.init(allocator, source) };
+pub fn init(allocator: Allocator, source_text: []const u8) Lexer {
+    return .{ ._impl = LexerImpl.init(allocator, source_text) };
 }
 
 pub fn deinit(self: *Lexer) void {
@@ -17,6 +17,10 @@ pub fn deinit(self: *Lexer) void {
 
 pub fn next(self: *Lexer) !?Token {
     return self._impl.next(.Whitespace);
+}
+
+pub inline fn source(self: *const Lexer) []const u8 {
+    return self._impl.source;
 }
 
 test {

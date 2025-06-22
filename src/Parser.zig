@@ -10,10 +10,15 @@ const ParserImpl = @import("Parser/ParserImpl.zig");
 // lexer: Lexer,
 _impl: ParserImpl,
 
-pub fn init(allocator: Allocator, source: []const u8) Parser {
-    return .{ ._impl = ParserImpl.init(allocator, source) };
-}
+// pub fn init(allocator: Allocator, source: []const u8) Parser {
+//     return .{ ._impl = ParserImpl.init(allocator, source) };
+// }
 
-pub fn parse(self: *Parser) !Ast.Document {
-    return .{};
+// pub fn parse(self: *Parser) !Ast.Document {
+//     return .{};
+// }
+
+
+test {
+    std.testing.refAllDecls(ParserImpl);
 }
