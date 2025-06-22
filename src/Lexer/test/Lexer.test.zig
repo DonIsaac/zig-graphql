@@ -62,7 +62,7 @@ test "spot check - valid" {
         while (try lexer.next()) |t| {
             if (debug) {
                 const s = t.span;
-                const tok_name = lexer.source[s.start..s.end];
+                const tok_name = lexer._impl.source[s.start..s.end];
                 std.debug.print("{}: {s}\n", .{ t.kind, tok_name });
             }
             try toks.append(t.kind);
