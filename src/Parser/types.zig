@@ -34,17 +34,17 @@ fn parseListType(self: *ParserImpl) ParserImpl.Error!Ast.Type.List {
     try self.expect(.l_bracket);
     const start = self.startSpan();
     const ty = try parseType(self);
-    try self.expect(.r_bracket);
     const span = self.endSpan(start);
+    try self.expect(.r_bracket);
 
     return Ast.Type.List{ .type = ty, .span = span };
 }
 
-fn parseNamedOrListType(self: *ParserImpl) ParserImpl.Error!Ast.Type {
-    return if (self.cur.kind == .l_bracket)
-        self.parseListType()
+fn parseNamedOrListType(parser: *ParserImpl) ParserImpl.Error!Ast.Type {
+    return if (parser.at(.l_bracket))
+        parseListType(parser)
     else
-        self.parseNamedType();
+        parseNamedType(parser);
 }
 
 fn allocType(self: *ParserImpl, ty: anytype) ParserImpl.Error!Ast.Type {
