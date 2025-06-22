@@ -9,20 +9,23 @@ pub const Kind = enum {
     undetermined,
 
     // Keywords
-    query,
-    mutation,
-    subscription,
-    fragment,
-    @"type",
-    implements,
-    interface,
-    @"union",
-    @"enum",
-    scalar,
-    input,
-    directive,
-    schema,
-    extend,
+    kw_directive,
+    kw_enum,
+    kw_extend,
+    kw_false,
+    kw_fragment,
+    kw_implements,
+    kw_input,
+    kw_interface,
+    kw_mutation,
+    kw_on,
+    kw_query,
+    kw_scalar,
+    kw_schema,
+    kw_subscription,
+    kw_true,
+    kw_type,
+    kw_union,
 
     // Punctuators
     bang, // !
@@ -35,6 +38,7 @@ pub const Kind = enum {
     r_curly, // }
     percent, // %
     amp, // &
+    spread, // ...
     single_quote, // '
     asterisk, // *
     plus, // +

@@ -16,14 +16,14 @@ const ByteHandler = *const fn (lexer: *LexerImpl, byte: u8) Token.Kind;
 
 // zig-fmt: off
 pub const ASCII_TABLE: [128]ByteHandler = [_]ByteHandler{
-    //  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+//  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, WSP, LF_, VT_, FF_, CR_, ERR, ERR, // 0
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
     WSP, BNG, QUO, HSH, DOL, PCT, AMP, SQT, LPA, RPA, AST, PLS, COM, MIN, DOT, FSL, // 2
     DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LTH, EQU, GTH, QUE, // 3
     AT_, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, // 4
     LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LBR, BSL, RBR, CRT, USC, // 5
-    BTK, LET, LET, LET, LET, L_e, LET, LET, LET, LET, LET, LET, LET, L_m, LET, LET, // 6
+    BTK, LET, LET, LET, LET, L_e, L_f, LET, LET, LET, LET, LET, LET, L_m, LET, L_o, // 6
     LET, L_q, LET, L_s, L_t, LET, L_u, LET, LET, LET, LET, LCB, PIP, RCB, TLD, ERR, // 7
 };
 // zig-fmt: on
@@ -279,33 +279,48 @@ fn TLD(lexer: *LexerImpl, _: u8) Token.Kind {
 
 /// Lowercase e
 const L_e: ByteHandler = keywordOrName('e', &[_]struct { []const u8, Token.Kind }{
-    .{ "num", .@"enum" },
+    .{ "num", .kw_enum },
+});
+
+const L_f: ByteHandler = keywordOrName('f', &[_]struct { []const u8, Token.Kind }{
+    .{ "alse", .kw_false },
+    .{ "ragment", .kw_fragment },
 });
 
 /// Lowercase m
 const L_m: ByteHandler = keywordOrName('m', &[_]struct { []const u8, Token.Kind }{
-    .{ "utation", .mutation },
+    .{ "utation", .kw_mutation },
 });
+
+// const L_o
+fn L_o(lexer: *LexerImpl, c: u8) Token.Kind {
+    if (lexer.peek() == 'n') {
+        lexer.advanceBy(2);
+        return .kw_on;
+    }
+    return LET(lexer, c);
+}
 
 /// Lowercase q
 const L_q: ByteHandler = keywordOrName('q', &[_]struct { []const u8, Token.Kind }{
-    .{ "uery", .query },
+    .{ "uery", .kw_query },
 });
 
 /// Lowercase s
 const L_s: ByteHandler = keywordOrName('s', &[_]struct { []const u8, Token.Kind }{
-    .{ "ubscription", .subscription },
-    .{ "chema", .schema },
+    .{ "ubscription", .kw_subscription },
+    .{ "chema", .kw_schema },
 });
 
 /// Lowercase t
 const L_t: ByteHandler = keywordOrName('t', &[_]struct { []const u8, Token.Kind }{
-    .{ "ype", .type },
+    .{ "ype", .kw_type },
+    .{ "rue", .kw_true },
 });
 
 /// Lowercase u
 const L_u: ByteHandler = keywordOrName('u', &[_]struct { []const u8, Token.Kind }{
-    .{ "nion", .@"union" },
+    .{ "nion", .kw_union },
 });
 
 fn keywordOrName(comptime first: u8, comptime kws: anytype) ByteHandler {

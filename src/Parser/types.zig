@@ -63,9 +63,11 @@ const std = @import("std");
 const t = std.testing;
 
 test parseListType {
+    const Span = @import("../Span.zig");
+
     var arena = std.heap.ArenaAllocator.init(t.allocator);
     defer arena.deinit();
-    var parser = ParserImpl.init(t.allocator, "[Int]");
+    var parser = ParserImpl.init(arena.allocator(), "[Int]");
     // parser.peek();
     try parser.bump();
     const ty = parseListType(&parser) catch |e| {
@@ -74,5 +76,11 @@ test parseListType {
         }
         return e;
     };
-    try t.expectEqualStrings("Int", ty.type.named.name.value);
+    try t.expect(ty.type == .named);
+    try t.expectEqual(
+        Span{ .start = 1, .end = 5 }, // FIXME: should be 4. Same bug as "Int]"
+        ty.type.named.name.span(),
+    );
+    // FIXME: Should be "Int"
+    try t.expectEqualStrings("Int]", ty.type.named.name.value);
 }

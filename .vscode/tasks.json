@@ -4,6 +4,7 @@
         {
             "label": "build",
             "type": "shell",
+            "problemMatcher": "$zig",
             "command": "zig",
             "args": [
                 "build"
@@ -11,6 +12,14 @@
             "group": {
                 "kind": "build",
                 "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
             }
         },
     ]

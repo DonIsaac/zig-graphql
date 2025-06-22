@@ -38,15 +38,15 @@ test "spot check - valid" {
         .{ "#foo", &[_]Kind{.comment} },
         .{
             "query MyQuery {}",
-            &[_]Kind{ .query, .name, .l_curly, .r_curly },
+            &[_]Kind{ .kw_query, .name, .l_curly, .r_curly },
         },
         .{
             "mutation Foo($bar: String!) { bar }",
-            &[_]Kind{ .mutation, .name, .l_paren, .dollar, .name, .colon, .name, .bang, .r_paren, .l_curly, .name, .r_curly },
+            &[_]Kind{ .kw_mutation, .name, .l_paren, .dollar, .name, .colon, .name, .bang, .r_paren, .l_curly, .name, .r_curly },
         },
         .{
             "enum Fruit { Apple, Banana, Cherry }",
-            &[_]Kind{ .@"enum", .name, .l_curly, .name, .comma, .name, .comma, .name, .r_curly },
+            &[_]Kind{ .kw_enum, .name, .l_curly, .name, .comma, .name, .comma, .name, .r_curly },
         },
     };
 

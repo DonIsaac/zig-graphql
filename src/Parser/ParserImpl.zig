@@ -96,10 +96,10 @@ pub inline fn endSpan(self: *const ParserImpl, start: u32) Span {
     return .{ .start = start, .end = self.cur.span.end };
 }
 
-pub fn alloc(self: *ParserImpl, value: anytype) Allocator.Error!*@TypeOf(value) {
-    const T = @TypeOf(value);
+pub fn alloc(self: *ParserImpl, ast_node: anytype) Allocator.Error!*@TypeOf(ast_node) {
+    const T = @TypeOf(ast_node);
     const ptr: *T = try self.lexer._impl.allocator.create(T);
-    ptr.* = value;
+    ptr.* = ast_node;
     return ptr;
 }
 
