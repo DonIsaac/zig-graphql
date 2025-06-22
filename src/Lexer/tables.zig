@@ -1,283 +1,347 @@
 const std = @import("std");
 const Lexer = @import("../Lexer.zig");
 const ident = @import("ident.zig");
+const util = @import("../util.zig");
 
-const ByteHandler = *const fn(lexer: *Lexer, byte: u8) void;
+const mem = std.mem;
+const ascii = std.ascii;
+
+const Token = Lexer.Token;
+
+pub fn handleASCIIByte(lexer: *Lexer, byte: u8) Token.Kind {
+    util.debugAssert(ascii.isASCII(byte));
+    return @call(.auto, ASCII_TABLE[byte], .{ lexer, byte });
+}
+
+const ByteHandler = *const fn (lexer: *Lexer, byte: u8) Token.Kind;
 
 // zig-fmt: off
 pub const ASCII_TABLE: [128]ByteHandler = [_]ByteHandler{
-//  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+    //  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, WSP, LF_, VT_, FF_, CR_, ERR, ERR, // 0
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
     WSP, BNG, QUO, HSH, DOL, PCT, AMP, SQT, LPA, RPA, AST, PLS, COM, MIN, DOT, FSL, // 2
     DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LTH, EQU, GTH, QUE, // 3
     AT_, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, // 4
     LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LBR, BSL, RBR, CRT, USC, // 5
-    BTK, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, // 6
-    LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LCB, PIP, RCB, TLD, ERR, // 7
-    // ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 8
-    // ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 9
-    // ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // A
-    // ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // B
-    // ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // C
-    // ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // D
-    // ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // E
-    // ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // F
+    BTK, LET, LET, LET, LET, LET, L_e, LET, LET, LET, LET, LET, LET, L_m, LET, LET, // 6
+    LET, L_q, LET, LET, LET, LET, L_u, LET, LET, LET, LET, LCB, PIP, RCB, TLD, ERR, // 7
 };
 // zig-fmt: on
 
 // ============================== BYTE HANDLERS ==============================
 
-fn ERR(lexer: *Lexer, byte: u8) void {
+fn ERR(lexer: *Lexer, byte: u8) Token.Kind {
     lexer.fatalError("Unexpected byte: {c}", .{byte});
+    return .undetermined;
 }
 
 // ============================== WHITESPACE & LINE TERMINATORS ==============================
 
 /// Whitespace: Horizontal Tab (0x09) and Space (0x20)
-fn WSP(lexer: *Lexer, _: u8) void {
+fn WSP(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .whitespace;
+    return .whitespace;
 }
 
 /// Line Feed (0x0A) - Line Terminator
-fn LF_(lexer: *Lexer, _: u8) void {
+fn LF_(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .line_terminator;
+    return .line_terminator;
 }
 
 /// Carriage Return (0x0D) - Line Terminator
 /// Note: May be followed by Line Feed (0x0A)
-fn CR_(lexer: *Lexer, _: u8) void {
+fn CR_(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .line_terminator;
+    if (lexer.curr() == '\n') lexer.bump();
+
+    return .line_terminator;
 }
 
 /// Vertical Tabulation (0x0B) - Whitespace
-fn VT_(lexer: *Lexer, _: u8) void {
+fn VT_(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .whitespace;
+    return .whitespace;
 }
 
 /// Form Feed (0x0C) - Whitespace
-fn FF_(lexer: *Lexer, _: u8) void {
-    lexer.bump();
-    lexer.tok.kind = .whitespace;
+fn FF_(lexer: *Lexer, _: u8) Token.Kind {
+    // TODO: simd
+    while (if (lexer.curr()) |c| ascii.isWhitespace(c) else false) {
+        lexer.bump();
+    }
+    return .whitespace;
 }
 
 // ============================== PUNCTUATORS ==============================
 
 /// Exclamation mark (0x21) - !
-fn BNG(lexer: *Lexer, _: u8) void {
+fn BNG(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .bang;
+    return .bang;
 }
 
 /// Double quote (0x22) - "
-fn QUO(lexer: *Lexer, _: u8) void {
+fn QUO(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .double_quote;
+    return .double_quote;
 }
 
 /// Hash (0x23) - # (Comment start)
-fn HSH(lexer: *Lexer, _: u8) void {
+fn HSH(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .hash;
+    while (lexer.curr()) |c| {
+        switch (c) {
+            '\n' => {
+                return .comment;
+            },
+        }
+    }
+    return .hash;
 }
 
 /// Dollar (0x24) - $
-fn DOL(lexer: *Lexer, _: u8) void {
+fn DOL(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .dollar;
+    return .dollar;
 }
 
 /// Percent (0x25) - %
-fn PCT(lexer: *Lexer, _: u8) void {
+fn PCT(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .percent;
+    return .percent;
 }
 
 /// Ampersand (0x26) - &
-fn AMP(lexer: *Lexer, _: u8) void {
+fn AMP(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .amp;
+    return .amp;
 }
 
 /// Single quote (0x27) - '
-fn SQT(lexer: *Lexer, _: u8) void {
+fn SQT(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .single_quote;
+    return .single_quote;
 }
 
 /// Left parenthesis (0x28) - (
-fn LPA(lexer: *Lexer, _: u8) void {
+fn LPA(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .l_paren;
+    return .l_paren;
 }
 
 /// Right parenthesis (0x29) - )
-fn RPA(lexer: *Lexer, _: u8) void {
+fn RPA(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .r_paren;
+    return .r_paren;
 }
 
 /// Asterisk (0x2A) - *
-fn AST(lexer: *Lexer, _: u8) void {
+fn AST(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .asterisk;
+    return .asterisk;
 }
 
 /// Plus (0x2B) - +
-fn PLS(lexer: *Lexer, _: u8) void {
+fn PLS(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .plus;
+    return .plus;
 }
 
 /// Comma (0x2C) - ,
-fn COM(lexer: *Lexer, _: u8) void {
+fn COM(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .comma;
+    return .comma;
 }
 
 /// Minus (0x2D) - -
-fn MIN(lexer: *Lexer, _: u8) void {
+fn MIN(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .minus;
+    return .minus;
 }
 
 /// Period (0x2E) - .
-fn DOT(lexer: *Lexer, _: u8) void {
+fn DOT(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .period;
+    return .period;
 }
 
 /// Forward slash (0x2F) - /
-fn FSL(lexer: *Lexer, _: u8) void {
+fn FSL(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .forward_slash;
+    return .forward_slash;
 }
 
 /// Colon (0x3A) - :
-fn COL(lexer: *Lexer, _: u8) void {
+fn COL(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .colon;
+    return .colon;
 }
 
 /// Semicolon (0x3B) - ;
-fn SEM(lexer: *Lexer, _: u8) void {
+fn SEM(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .semicolon;
+    return .semicolon;
 }
 
 /// Less than (0x3C) - <
-fn LTH(lexer: *Lexer, _: u8) void {
+fn LTH(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .less_than;
+    return .less_than;
 }
 
 /// Equal (0x3D) - =
-fn EQU(lexer: *Lexer, _: u8) void {
+fn EQU(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .equal;
+    return .equal;
 }
 
 /// Greater than (0x3E) - >
-fn GTH(lexer: *Lexer, _: u8) void {
+fn GTH(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .greater_than;
+    return .greater_than;
 }
 
 /// Question mark (0x3F) - ?
-fn QUE(lexer: *Lexer, _: u8) void {
+fn QUE(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .question_mark;
+    return .question_mark;
 }
 
 /// At (0x40) - @
-fn AT_(lexer: *Lexer, _: u8) void {
+fn AT_(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .at;
+    return .at;
 }
 
 /// Left bracket (0x5B) - [
-fn LBR(lexer: *Lexer, _: u8) void {
+fn LBR(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .l_bracket;
+    return .l_bracket;
 }
 
 /// Backslash (0x5C) - \
-fn BSL(lexer: *Lexer, _: u8) void {
+fn BSL(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .backslash;
+    return .backslash;
 }
 
 /// Right bracket (0x5D) - ]
-fn RBR(lexer: *Lexer, _: u8) void {
+fn RBR(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .r_bracket;
+    return .r_bracket;
 }
 
 /// Caret (0x5E) - ^
-fn CRT(lexer: *Lexer, _: u8) void {
+fn CRT(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .caret;
+    return .caret;
 }
 
 /// Underscore (0x5F) - _
-fn USC(lexer: *Lexer, _: u8) void {
+fn USC(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .underscore;
+    return .underscore;
 }
 
 /// Backtick (0x60) - `
-fn BTK(lexer: *Lexer, _: u8) void {
+fn BTK(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .backtick;
+    return .backtick;
 }
 
 /// Left curly brace (0x7B) - {
-fn LCB(lexer: *Lexer, _: u8) void {
+fn LCB(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .l_curly;
+    return .l_curly;
 }
 
 /// Pipe (0x7C) - |
-fn PIP(lexer: *Lexer, _: u8) void {
+fn PIP(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .pipe;
+    return .pipe;
 }
 
 /// Right curly brace (0x7D) - }
-fn RCB(lexer: *Lexer, _: u8) void {
+fn RCB(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .r_curly;
+    return .r_curly;
 }
 
 /// Tilde (0x7E) - ~
-fn TLD(lexer: *Lexer, _: u8) void {
+fn TLD(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .tilde;
+    return .tilde;
 }
 
 // ============================== LETTERS & DIGITS ==============================
 
+/// Lowercase e
+fn L_e(lexer: *Lexer, _: u8) Token.Kind {
+    lexer.expect'e');
+    return ident.isKeywordWithoutFirstChar(
+        lexer,
+        &[_]struct { []const u8, Token.Kind }{
+            .{ "num", .@"enum" },
+        },
+    ) orelse lexNameRemaining(lexer);
+}
+
+// Lowercase m
+fn L_m(lexer: *Lexer, _: u8) Token.Kind {
+    lexer.expect'm');
+    return ident.isKeywordWithoutFirstChar(
+        lexer,
+        &[_]struct { []const u8, Token.Kind }{
+            .{ "utation", .mutation },
+        },
+    ) orelse lexNameRemaining(lexer);
+}
+
+/// Lowercase q
+fn L_q(lexer: *Lexer, _: u8) Token.Kind {
+    lexer.expect'q');
+    const rest = lexer.remaining();
+    if (mem.startsWith(u8, rest, "uery")) {
+        lexer.advanceBy(@intCast("uery".len));
+        return .query;
+    }
+    return lexNameRemaining(lexer);
+}
+
+/// Lowercase u
+fn L_u(lexer: *Lexer, _: u8) Token.Kind {
+    lexer.expect'u');
+    return ident.isKeywordWithoutFirstChar(
+        lexer,
+        &[_]struct { []const u8, Token.Kind }{
+            .{ "nion", .@"union" },
+        },
+    ) orelse lexNameRemaining(lexer);
+}
+
 /// Letters (0x41-0x5A, 0x61-0x7A) - A-Z, a-z
-fn LET(lexer: *Lexer, c: u8) void {
+fn LET(lexer: *Lexer, c: u8) Token.Kind {
     util.debugAssert(ident.isNameStart(c));
     lexer.bump();
-    var next = lexer.peek();
-    while (next != null and ident.isNameContinue(next.?)) {
+    return lexNameRemaining(lexer);
+}
+
+fn lexNameRemaining(lexer: *Lexer) Token.Kind {
+    // NameStart should already be consumed
+    util.debugAssert(lexer._cur != lexer.tok.span.start);
+    while (lexer.curr()) |c| {
+        if (!ident.isNameContinue(c)) {
+            break;
+        }
         lexer.bump();
-        next = lexer.peek();
     }
-    lexer.tok.kind = .name;
+    return .name;
 }
 
 /// Digits (0x30-0x39) - 0-9
-fn DIG(lexer: *Lexer, _: u8) void {
+fn DIG(lexer: *Lexer, _: u8) Token.Kind {
     lexer.bump();
-    lexer.tok.kind = .int_value;
+    return .int_value;
 }
-
-
-const util = @import("../util.zig");

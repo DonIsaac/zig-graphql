@@ -75,6 +75,13 @@ pub const Kind = enum {
     line_terminator,
     comment,
     block_comment,
+
+    pub inline fn isIgnored(self: Kind) bool {
+        return switch (self) {
+            .whitespace, .line_terminator, .comment, .block_comment, .comma => true,
+            else => false,
+        };
+    }
 };
 
 const Span = @import("../Span.zig");

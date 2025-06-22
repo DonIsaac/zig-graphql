@@ -27,6 +27,7 @@ test "valid examples" {
 }
 
 test "spot check - valid" {
+    const debug = false;
     const Kind = Lexer.Token.Kind;
     const TestCase = struct { []const u8, []const Kind };
     const test_cases = &[_]TestCase{
@@ -38,6 +39,14 @@ test "spot check - valid" {
             "query MyQuery {}",
             &[_]Kind{ .query, .name, .l_curly, .r_curly },
         },
+        .{
+            "mutation Foo($bar: String!) { bar }",
+            &[_]Kind{ .mutation, .name, .l_paren, .name, .colon, .name, .r_paren, .l_curly, .name, .r_curly },
+        },
+        .{
+            "enum Foo { A, B, C }",
+            &[_]Kind{ .@"enum", .name, .l_curly, .name, .comma, .name, .comma, .name, .r_curly },
+        }
     };
 
     for (test_cases) |tc| {
@@ -50,6 +59,11 @@ test "spot check - valid" {
         defer toks.deinit();
 
         while (try lexer.next()) |t| {
+            if (debug) {
+                const s = t.span;
+                const tok_name = lexer.source[s.start..s.end];
+                std.debug.print("{}: {s}\n", .{ t.kind, tok_name });
+            }
             try toks.append(t.kind);
         }
         std.testing.expectEqualSlices(Kind, expected, toks.items) catch |e| {
