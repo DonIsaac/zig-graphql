@@ -15,6 +15,10 @@ pub const Error = ParserImpl.Error;
 pub const Options = ParserImpl.Options; // TODO: use
 
 /// Create a new Parser.
+/// 
+/// Initializing a Parser does nothing until a document is parsed.
+/// 
+/// Caller maintains ownership over `source`.
 pub inline fn init(allocator: Allocator, source: []const u8) Parser {
     return .{ ._impl = ParserImpl.init(allocator, source) };
 }

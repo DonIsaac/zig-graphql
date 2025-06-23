@@ -159,11 +159,49 @@ fn parseField(p: *ParserImpl) !Ast.Selection.Field {
     };
 }
 
+/// `Arguments[Const] : `(` Argument[?Const]+ `)`
 pub fn parseArguments(p: *ParserImpl, comptime opt: bool, comptime @"const": bool) !Ast.Argument.List {
-    _ = &p;
-    _ = opt;
-    _ = @"const";
-    @panic("todo");
+    const start = p.startSpan();
+    
+    if (comptime opt) {
+        _ = try p.eat(.l_paren) orelse return Ast.Argument.List.empty;
+    } else {
+        try p.expect(.l_paren);
+    }
+    
+    const args = try parseArgumentList(p, @"const");
+    try p.expect(.r_paren);
+    
+    return Ast.Argument.List{
+        .args = args,
+        .span = p.endSpan(start),
+    };
+}
+
+/// `Argument[Const] : Name : Value[?Const]`
+fn parseArgument(p: *ParserImpl, comptime @"const": bool) !Ast.Argument {
+    const start = p.startSpan();
+    const name = try p.parseName();
+    try p.expect(.colon);
+    const value = try p.parseValue(@"const");
+    
+    return Ast.Argument{
+        .name = name,
+        .value = value,
+        .span = p.endSpan(start),
+    };
+}
+
+fn parseArgumentList(p: *ParserImpl, comptime @"const": bool) ![]Ast.Argument {
+    const Wrapper = struct {
+        const is_const = @"const";
+        pub fn parse(p_: *ParserImpl) !Ast.Argument {
+            return parseArgument(p_, is_const);
+        }
+    };
+    
+    const parseArgList = ParserImpl.parseListOf(Ast.Argument, Wrapper.parse, &[_]Token.Kind{.name});
+    return parseArgList(p);
 }
 
 /// `Directives[Const] : Directive[?Const]+`

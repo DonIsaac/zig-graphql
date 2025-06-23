@@ -107,6 +107,7 @@ pub const Argument = struct {
     pub const List = struct {
         args: []Argument,
         span: Span,
+        pub const empty: List = .{ .args = &[_]Argument{}, .span = .empty };
     };
 };
 

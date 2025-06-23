@@ -42,6 +42,7 @@ pub fn allocator(self: *const AstBuilder) Allocator {
     return self.parser().lexer._impl.allocator;
 }
 
+/// Allocate a new AST node.
 pub fn alloc(
     self: *const AstBuilder,
     ast_node: anytype,
@@ -52,13 +53,36 @@ pub fn alloc(
     return ptr;
 }
 
+/// Allocate a new list of AST nodes.
 pub inline fn list(
     self: *const AstBuilder,
     /// Type of AST nodes the list is of
     comptime T: type,
+    /// Initial capacity of the list
     comptime capacity: usize,
 ) Allocator.Error!std.ArrayList(T) {
     return std.ArrayList(T).initCapacity(self.allocator(), capacity);
+}
+
+/// Convert a list of AST nodes into a slice, reclaiming unused memory if
+/// possible. Caller owns the returned allocation.
+/// 
+/// Some caveats:
+/// - `list_` cannot be freed after calling this function. In some cases, freeing will be a no-op, but in others
+///   it will invalidate the returned slice's allocation.
+/// - the returned slice can and should be freed after use.
+pub fn intoSlice(self: *const AstBuilder, T: type, list_: *std.ArrayList(T)) []T {
+    const options = self.parser().options;
+
+    if (options.lossless) {
+        // fully reclaims unused memory if resizing isnt possible
+        return list_.toOwnedSlice();
+    }
+
+    // attempt to resize the list's buffer in-place. If resizing would require
+    // a reallocation + copy, we'll leak the memory
+    _ = list_.allocator.resize(list_.allocatedSlice(), list_.items.len);
+    return list_.items;
 }
 
 // ================================= BUILDERS ==================================

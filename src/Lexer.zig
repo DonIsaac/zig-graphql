@@ -13,6 +13,7 @@ pub fn init(allocator: Allocator, source_text: []const u8) Lexer {
 
 pub fn deinit(self: *Lexer) void {
     self._impl.deinit();
+    self.* = undefined;
 }
 
 pub fn next(self: *Lexer) !?Token {

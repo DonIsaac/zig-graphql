@@ -51,6 +51,9 @@ pub fn init(allocator_: Allocator, source_: []const u8) ParserImpl {
     p.ast = AstBuilder.init(&p);
     return p;
 }
+pub fn deinit(self: *ParserImpl) void {
+    self.lexer.deinit();
+}
 
 // pub fn parseDocument(self: *ParserImpl) !Ast.Document {
 //     var definitions = try std.ArrayListUnmanaged(Ast.Definition).initCapacity(self.allocator(), 1);
@@ -219,7 +222,7 @@ pub const parseListOf = expressions.parseListOf;
 
 // =============================================================================
 
-pub fn errors(self: *const ParserImpl) []const Diagnostic {
+pub fn errors(self: *ParserImpl) []Diagnostic {
     return self.lexer._impl.errors.items;
 }
 /// Report a non fatal error.
@@ -233,7 +236,11 @@ pub fn errAtCurr(self: *const ParserImpl, message: []const u8) Diagnostic {
 pub fn unexpectedToken(self: *ParserImpl) ParserImpl.Error {
     @branchHint(.cold);
     const tok = self.cur;
-    const msg = std.fmt.allocPrint(self.lexer._impl.allocator, "Unexpected token: '{s}'", .{@tagName(tok.kind)}) catch unreachable;
+    const msg = std.fmt.allocPrint(
+        self.lexer._impl.allocator,
+        "Unexpected token: '{s}'",
+        .{@tagName(tok.kind)},
+    ) catch unreachable;
     self.report(Diagnostic{ .span = tok.span, .message = msg });
     return error.UnexpectedToken;
 }

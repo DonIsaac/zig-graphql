@@ -33,6 +33,7 @@ pub fn init(allocator: Allocator, source: []const u8) LexerImpl {
 
 pub fn deinit(self: *LexerImpl) void {
     self.errors.deinit(self.allocator);
+    self.* = undefined;
 }
 
 pub const Ignore = enum(u2) {

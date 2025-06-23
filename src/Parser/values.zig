@@ -30,8 +30,14 @@ pub fn parseValue(p: *ParserImpl, comptime is_const: bool) ParserImpl.Error!Ast.
         inline .kw_true, .kw_false => |v| Value{ .boolean = try parseBoolean(p, v == .kw_true) },
         .l_bracket => @panic("todo: ListValue[?Const]"),
         .l_curly => @panic("todo: ObjectValue[?Const]"),
-        .int_value => Value{ .int = .{ .value = p.ast.slice(tok), .span = tok.span } },
-        .name => Value{ .@"enum" = .{ .value = p.ast.name(tok) } },
+        .int_value => blk: {
+            try p.bump();
+            break :blk Value{ .int = .{ .value = p.ast.slice(tok), .span = tok.span } };
+        },
+        .name => blk: {
+            try p.bump();
+            break :blk Value{ .@"enum" = .{ .value = p.ast.name(tok) } };
+        },
         else => p.unexpectedToken(),
     };
 }
