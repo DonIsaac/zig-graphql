@@ -2,9 +2,42 @@
 const Span = @import("../Span.zig");
 
 /// Represents a complete GraphQL document
+///
+/// ## References
+/// - [2.2 Document](https://spec.graphql.org/draft/#sec-Document)
 pub const Document = struct {
     definitions: []Definition,
     span: Span,
+
+    pub fn isExecutable(self: *const Document) bool {
+        if (self.definitions.len == 0) return false;
+        var has_operation = false;
+        for (self.definitions) |def| {
+            switch (def) {
+                .executable => |exe| has_operation = has_operation or exe == .operation,
+                else => return false,
+            }
+        }
+        return has_operation;
+    }
+
+    /// An executable document
+    pub const Executable = struct {
+        definitions: []ExecutableDefinition,
+        span: Span,
+
+        pub fn isExecutable(self: *const Executable) bool {
+            return self.definitions.len > 0 and for (self.definitions) |def| blk: {
+                if (def == .operation) break :blk true;
+            } else false;
+        }
+    };
+
+    /// A type system document
+    pub const TypeSystem = struct {
+        definitions: []TypeSystemDefinitionOrExtension,
+        span: Span,
+    };
 };
 
 /// A definition in a GraphQL document
@@ -20,6 +53,9 @@ pub const ExecutableDefinition = union(enum) {
 };
 
 /// A GraphQL operation (query, mutation, or subscription)
+///
+/// ## References
+/// - [2.3 Operations](https://spec.graphql.org/draft/#sec-Language.Operations)
 pub const OperationDefinition = struct {
     operation_type: OperationType,
     name: ?Name,
@@ -31,18 +67,30 @@ pub const OperationDefinition = struct {
 
 /// The type of operation
 pub const OperationType = enum {
+    /// A read-only fetch
     query,
+    /// A write followed by a fetch
     mutation,
+    /// A long-lived request that fetches data in response to a sequence of
+    /// events over time
     subscription,
 };
 
 /// A selection in a selection set
+///
+/// ## References
+/// - [2.4 Selection Sets](https://spec.graphql.org/draft/#sec-Selection-Sets)
 pub const Selection = union(enum) {
     field: Field,
     fragment_spread: FragmentSpread,
     inline_fragment: InlineFragment,
 
-    /// A selection set containing fields, fragment spreads, and inline fragments
+    /// A selection set defines an ordered set of selections (fields, fragment
+    /// spreads and inline fragments) against an object, union or interface
+    /// type.
+    ///
+    /// ## References
+    /// - [2.4 Selection Sets](https://spec.graphql.org/draft/#sec-Selection-Sets)
     pub const Set = struct {
         selections: []Selection,
         span: Span,
@@ -50,6 +98,9 @@ pub const Selection = union(enum) {
     };
 
     /// A field selection
+    ///
+    /// ## References
+    /// - [2.5 Fields](https://spec.graphql.org/draft/#sec-Language.Fields)
     pub const Field = struct {
         alias: ?Name,
         name: Name,
@@ -62,14 +113,14 @@ pub const Selection = union(enum) {
     /// A fragment spread
     pub const FragmentSpread = struct {
         name: Name,
-        directives: ?[]Directive,
+        directives: []Directive,
         span: Span,
     };
 
     /// An inline fragment
     pub const InlineFragment = struct {
         type_condition: ?Type.Named,
-        directives: ?[]Directive,
+        directives: []Directive,
         selection_set: Selection.Set,
         span: Span,
     };
@@ -100,10 +151,18 @@ pub const Variable = struct {
 };
 
 /// A field argument
+///
+/// ## References
+/// - [2.6 Arguments](https://spec.graphql.org/draft/#sec-Language.Arguments)
 pub const Argument = struct {
     name: Name,
     value: Value,
     span: Span,
+
+    /// A list of arguments
+    ///
+    /// ## References
+    /// - [2.6 Arguments](https://spec.graphql.org/draft/#sec-Language.Arguments)
     pub const List = struct {
         args: []Argument,
         span: Span,
@@ -196,7 +255,9 @@ pub const Value = union(enum) {
     };
 };
 
-/// A GraphQL type
+/// A GraphQL type reference
+///
+/// See: [2.11 Type References](https://spec.graphql.org/draft/#sec-Type-References)
 pub const Type = union(enum) {
     named: *Type.Named,
     list: *Type.List,

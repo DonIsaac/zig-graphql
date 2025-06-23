@@ -7,10 +7,21 @@ const values = @import("values.zig");
 const types = @import("types.zig");
 const diagnostics = @import("diagnostics.zig");
 
+/// ## [2.2 Document - Definition](https://spec.graphql.org/draft/#sec-Document)
+///
+///     Definition:
+///         ExecutableDefinition
+///         TypeSystemDefinitionOrExtensions
 pub fn parseDefinition(p: *ParserImpl) !Ast.Definition {
     // TODO: type system definition
     return .{ .executable = try parseExecutableDefinition(p) };
 }
+
+/// ## [2.2 Document - Executable Definition](https://spec.graphql.org/draft/#sec-Document)
+///
+///     ExecutableDefinition:
+///         OperationDefinition
+///         FragmentDefinition
 pub fn parseExecutableDefinition(
     p: *ParserImpl,
 ) !Ast.ExecutableDefinition {
@@ -137,13 +148,38 @@ fn parseSelectionSet(
 const parseSelectionList = ParserImpl.parseListOf(Ast.Selection, parseSelection, &[_]Token.Kind{ .name, .spread });
 fn parseSelection(p: *ParserImpl) !Ast.Selection {
     if (try p.eat(.spread)) |_| {
-        if (p.at(.kw_on)) |_| {
-            // InlineFragment : `...` TypeCondition? Directives? SelectionSet
-            @panic("todo: inline fragment");
-        } else {
-            // FragmentSpread : `...` FragmentName Directives?
-            @panic("todo: fragment spread");
-        }
+        // InlineFragment : `...` TypeCondition? Directives? SelectionSet
+        // FragmentSpread : `...` FragmentName Directives?
+        const start = p.startSpan();
+        const tok = p.cur;
+        return switch (tok.kind) {
+            .l_curly => p.ast.selectionInlineFragmentSelectionOnly(try parseSelectionSet(p, false)),
+            .kw_on => blk: {
+                try p.assert(.kw_on);
+                const directives = try parseDirectives(p);
+                break :blk if (p.at(.l_curly)) |_|
+                    // this is a selection set where type is 'on'
+                    // at least I think we treat `on` as a type condition?
+                    // break :blk Ast.Selection{ .inline_fragment = p.ast.inlineFragmentSelectionOnly(try parseSelectionSet(p, false)) };
+                    p.ast.selectionInlineFragment(p.ast.namedType(tok), directives, try parseSelectionSet(p, false), p.endSpan(start))
+                else
+                    p.ast.selectionFragmentSpread(p.ast.name(tok), directives, p.endSpan(start));
+            },
+            // InlineFragment with no type condition
+            .at => blk: {
+                try p.assert(.at);
+                const directives = try parseDirectives(p);
+                const sel = try parseSelectionSet(p, false);
+                break :blk p.ast.selectionInlineFragment(null, directives, sel, p.endSpan(start));
+            },
+            else => blk: {
+                if (!tok.kind.isName()) return p.unexpectedToken();
+                // FragmentSpread
+                const name = try parseFragmentName(p, false);
+                const directives = try parseDirectives(p);
+                break :blk p.ast.selectionFragmentSpread(name, directives, p.endSpan(start));
+            },
+        };
     }
     return Ast.Selection{ .field = try parseField(p) };
 }
@@ -193,6 +229,13 @@ pub fn parseArguments(p: *ParserImpl, comptime opt: bool, comptime @"const": boo
 /// `Argument[Const] : Name : Value[?Const]`
 fn parseArgument(p: *ParserImpl, comptime @"const": bool) !Ast.Argument {
     const start = p.startSpan();
+
+    // accidental `{ user($id: 123) }`
+    if (try p.eat(.dollar)) |dollar| {
+        // TODO: configurable error recovery
+        p.report(diagnostics.argumentCannotBeVariable(dollar));
+    }
+
     const name = try p.parseName();
     try p.expect(.colon);
     const value = try p.parseValue(@"const");

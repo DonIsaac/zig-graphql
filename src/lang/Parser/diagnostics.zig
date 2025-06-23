@@ -6,6 +6,7 @@ const Span = @import("../../Span.zig");
 
 /// `Fragments cannot be named 'on'`
 pub fn fragmentNameCannotBeOn(tok: Token) Diagnostic {
+    @branchHint(.cold);
     util.debugAssert(tok.kind == .kw_on);
     return Diagnostic{
         .message = "Fragments cannot be named 'on'",
@@ -14,6 +15,7 @@ pub fn fragmentNameCannotBeOn(tok: Token) Diagnostic {
 }
 
 pub inline fn variableInConstValueContext(span: Span) Diagnostic {
+    @branchHint(.cold);
     return Diagnostic{
         .message = "Variables cannot be used here, only constant values",
         .span = span,
@@ -21,6 +23,7 @@ pub inline fn variableInConstValueContext(span: Span) Diagnostic {
 }
 
 pub fn listCannotBeEmpty(comptime name_plural: []const u8, span: Span) Diagnostic {
+    @branchHint(.cold);
     comptime {
         std.debug.assert(name_plural.len > 0);
         // name cannot have trailing whitespace
@@ -30,5 +33,14 @@ pub fn listCannotBeEmpty(comptime name_plural: []const u8, span: Span) Diagnosti
     return Diagnostic{
         .message = name_plural ++ " must have at least one item",
         .span = span,
+    };
+}
+
+pub fn argumentCannotBeVariable(tok: Token) Diagnostic {
+    @branchHint(.cold);
+    return Diagnostic{
+        // TODO: add help field to Diagnostic
+        .message = "Arguments cannot be variables. Remove the `$` prefix",
+        .span = tok.span,
     };
 }

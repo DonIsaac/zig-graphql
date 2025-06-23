@@ -294,6 +294,7 @@ fn TLD(lexer: *LexerImpl, _: u8) Token.Kind {
 /// Lowercase e
 const L_e: ByteHandler = keywordOrName('e', &[_]struct { []const u8, Token.Kind }{
     .{ "num", .kw_enum },
+    .{ "xtend", .kw_extend }
 });
 
 const L_f: ByteHandler = keywordOrName('f', &[_]struct { []const u8, Token.Kind }{
@@ -328,6 +329,7 @@ const L_q: ByteHandler = keywordOrName('q', &[_]struct { []const u8, Token.Kind 
 const L_s: ByteHandler = keywordOrName('s', &[_]struct { []const u8, Token.Kind }{
     .{ "ubscription", .kw_subscription },
     .{ "chema", .kw_schema },
+    .{ "calar", .kw_scalar },
 });
 
 /// Lowercase t

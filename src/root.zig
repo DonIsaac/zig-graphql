@@ -3,11 +3,16 @@
 //! start with main.zig instead.
 const std = @import("std");
 
+/// Corresponds to the
+/// [language](https://spec.graphql.org/draft/#sec-Language) section of the
+/// GraphQL specification.
 pub const lang = struct {
-    pub const Lexer = @import("lang/Lexer.zig");
     pub const Parser = @import("lang/Parser.zig");
     pub const Ast = @import("lang/Ast.zig");
 };
+
+pub const Diagnostic = @import("Diagnostic.zig");
+pub const Span = @import("Span.zig");
 
 test {
     std.testing.refAllDecls(lang);

@@ -95,7 +95,7 @@ pub const Kind = enum(u8) {
 
     pub inline fn isName(self: Kind) bool {
         const repr: u8 = @intFromEnum(self);
-        return repr >= @intFromEnum(.name) and repr <= @intFromEnum(.kw_null);
+        return repr >= @intFromEnum(Kind.name) and repr <= @intFromEnum(Kind.kw_null);
     }
 };
 

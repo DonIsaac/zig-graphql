@@ -93,6 +93,10 @@ pub fn name(self: *const AstBuilder, span_like_thingy: anytype) Ast.Name {
     const slice_ = span.slice(self.parser().source());
     return Ast.Name{ .value = slice_, .pos = span.offset(.Start) };
 }
+pub fn namedType(self: *const AstBuilder, span_like_thingy: anytype) Ast.Type.Named {
+    const name_ = self.name(span_like_thingy);
+    return Ast.Type.Named{ .name = name_ };
+}
 
 /// Create an `Ast.Type` node from some inner `Ast.Type.*`
 pub fn @"type"(self: *const AstBuilder, ty: anytype) Allocator.Error!Ast.Type {
@@ -121,4 +125,41 @@ pub inline fn anonymousOperationDefinition(_: *const AstBuilder, selection_set: 
         .selection_set = selection_set,
         .span = selection_set.span,
     };
+}
+
+pub inline fn selectionFragmentSpread(
+    _: *const AstBuilder,
+    fragment_name: Ast.Name,
+    directives: []Ast.Directive,
+    span: Span,
+) Ast.Selection {
+    return Ast.Selection{ .fragment_spread = .{
+        .name = fragment_name,
+        .directives = directives,
+        .span = span,
+    } };
+}
+
+pub inline fn selectionInlineFragment(
+    _: *const AstBuilder,
+    type_condition: ?Ast.Type.Named,
+    directives: []Ast.Directive,
+    selection_set: Ast.Selection.Set,
+    span: Span,
+) Ast.Selection {
+    return Ast.Selection{ .inline_fragment = .{
+        .type_condition = type_condition,
+        .directives = directives,
+        .selection_set = selection_set,
+        .span = span,
+    } };
+}
+
+pub inline fn selectionInlineFragmentSelectionOnly(_: *const AstBuilder, selection_set: Ast.Selection.Set) Ast.Selection {
+    return Ast.Selection{ .inline_fragment = .{
+        .type_condition = null,
+        .directives = &[_]Ast.Directive{},
+        .selection_set = selection_set,
+        .span = selection_set.span,
+    } };
 }
