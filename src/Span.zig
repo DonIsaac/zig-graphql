@@ -1,3 +1,7 @@
+//! A range within source text.
+//! 
+//! It is a logical error to create a `Span` with `start > end`. Most functions
+//! will invoke Illegal Behavior if this is the case.
 const Span = @This();
 
 /// Start position from the beginning of the source text
@@ -7,12 +11,19 @@ end: u32,
 
 pub const empty = Span{ .start = 0, .end = 0 };
 
+/// # Illegal Behavior
+/// `start` cannot be greater than `end`
+pub inline fn init(start: u32, end: u32) Span {
+    std.debug.assert(start <= end);
+    return .{ .start = start, .end = end };
+}
+
 /// Create a Span starting at some position that is `size` bytes long
 pub inline fn sized(start: u32, size: u32) Span {
     return .{ .start = start, .end = start + size };
 }
 
-pub fn eql(self: Span, other: Span) bool {
+pub inline fn eql(self: Span, other: Span) bool {
     return self.start == other.start and self.end == other.end;
 }
 
@@ -97,15 +108,21 @@ pub const Offset = enum(u32) {
     }
 };
 
+/// A memory-efficient representation of `?Span`.
+/// 
+/// This type is incapable of storing empty spans (i.e. `(0, 0)`).
 pub const Optional = struct {
     _raw: Span,
 
     pub const none = Optional{ ._raw = empty };
 
+    /// Encode a `?Span` into an `Optional`. If not null, `Span` cannot be empty
     pub inline fn init(span: ?Span) Span.Optional {
-        return .{ ._raw = if (span) |s| Optional.some(s) else .empty };
+        return if (span) |s| Optional.some(s) else none;
     }
 
+    /// ## Illegal Behavior
+    /// `span` cannot be empty
     pub inline fn some(span: Span) Span.Optional {
         std.debug.assert(!span.eql(.empty));
         return .{ ._raw = span };
@@ -119,6 +136,8 @@ pub const Optional = struct {
         if (self._raw.eql(empty)) return null;
         return self._raw;
     }
+    /// Decode the `Span` encoded in this `Optional`, invoking Illegal Behavior
+    /// if it is `null`.
     pub fn unwrap(self: Span.Optional) Span {
         std.debug.assert(!self._raw.eql(empty));
         return self._raw;
@@ -153,4 +172,10 @@ test "Span.spanned" {
     try t.expectEqual(s, Span.spanned(UnionWithSpannedVariants{ .first = s }));
     try t.expectEqual(s, Span.spanned(UnionWithSpannedVariants{ .second = .{ .span = s } }));
     try t.expectEqual(s, Span.spanned(UnionWithSpannedVariants{ .third = .{} }));
+}
+
+test "Optional.into" {
+    try t.expectEqual(null, Optional.init(null).into());
+    const span = Span.init(1, 2);
+    try t.expectEqual(span, Optional.init(span).into());
 }

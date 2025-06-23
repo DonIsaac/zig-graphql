@@ -120,7 +120,7 @@ fn parseSelectionSet(
     }
 
     // early check for `{}`
-    if (p.eat(.r_curly)) |_| {
+    if (try p.eat(.r_curly)) |_| {
         @branchHint(.cold);
         p.report(diagnostics.listCannotBeEmpty("Field Selections", p.endSpan(start)));
     }
@@ -206,9 +206,8 @@ fn parseArgument(p: *ParserImpl, comptime @"const": bool) !Ast.Argument {
 
 fn parseArgumentList(p: *ParserImpl, comptime @"const": bool) ![]Ast.Argument {
     const Wrapper = struct {
-        const is_const = @"const";
         pub fn parse(p_: *ParserImpl) !Ast.Argument {
-            return parseArgument(p_, is_const);
+            return parseArgument(p_, @"const");
         }
     };
 
@@ -254,7 +253,7 @@ fn parseVariableDefinition(p: *ParserImpl) !Ast.VariableDefinition {
     };
 }
 
-// todo: Ast.TypeCondition
+/// `TypeCondition : NamedType`
 fn parseTypeCondition(p: *ParserImpl) !Ast.Type.Named {
     return types.parseNamedType(p);
 }

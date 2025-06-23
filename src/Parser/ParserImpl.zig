@@ -2,6 +2,7 @@
 //! - [ ] make error recovery optional
 //!     - GraphQL servers ant to abort at the first syntax error.
 //!     - Tooling wants recovery for better DX
+//! - [ ] Many productions that take at least 1 item are not yet checking for empty lists.
 const ParserImpl = @This();
 
 const std = @import("std");

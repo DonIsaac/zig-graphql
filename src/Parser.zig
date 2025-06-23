@@ -24,9 +24,11 @@ pub inline fn init(allocator: Allocator, source: []const u8) Parser {
 }
 
 pub fn parseDocument(self: *Parser) Parser.Error!Ast.Document {
-    // self._impl.
-    // _ = &self;
-    return document.parseDocument(&self._impl);
+    return document.parseDocument(&self._impl, false);
+}
+
+pub fn parseExecutableDocument(self: *Parser) Parser.Error!Ast.Document {
+    return document.parseDocument(&self._impl, true);
 }
 
 pub fn errors(self: *Parser) []const Diagnostic {
