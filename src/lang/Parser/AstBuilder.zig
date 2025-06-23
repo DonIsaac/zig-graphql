@@ -7,10 +7,10 @@
 //! This code uses cursed Zig fuckery of the highest order, but boy does it
 //! produce a nice API.
 const AstBuilder = @This();
+const std = @import("std");
 const ParserImpl = @import("ParserImpl.zig");
 const Ast = @import("../Ast.zig");
-const Span = @import("../Span.zig");
-const std = @import("std");
+const Span = @import("../../Span.zig");
 const Allocator = std.mem.Allocator;
 
 _: u0,

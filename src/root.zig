@@ -3,8 +3,11 @@
 //! start with main.zig instead.
 const std = @import("std");
 
-pub const Lexer = @import("Lexer.zig");
-pub const Parser = @import("Parser.zig");
+pub const lang = struct {
+    pub const Lexer = @import("lang/Lexer.zig");
+    pub const Parser = @import("lang/Parser.zig");
+    pub const Ast = @import("lang/Ast.zig");
+};
 
 test {
     std.testing.refAllDecls(@This());

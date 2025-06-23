@@ -1,9 +1,10 @@
+// zlint-disable suppressed-errors -- lexer assumes allocations succeed for performance reasons
 const LexerImpl = @This();
 
 const std = @import("std");
-const Diagnostic = @import("../Diagnostic.zig");
-const Span = @import("../Span.zig");
-const util = @import("../util.zig");
+const Diagnostic = @import("../../Diagnostic.zig");
+const Span = @import("../../Span.zig");
+const util = @import("../../util.zig");
 
 const Token = @import("Token.zig");
 const tables = @import("tables.zig");
@@ -80,7 +81,7 @@ pub fn next(self: *LexerImpl, comptime skip_ignored: Ignore) !?Token {
 /// - current token gets reset to a new token of `kind` starting at the current position.
 /// - current token is invalid until `endTok` is called.
 pub fn startTok(self: *LexerImpl) callconv(util.callconv_inline) void {
-    // intentionally invalid token. `tok` only becomes valid after `endTok` is called.
+    // SAFETY: intentionally invalid token. `tok` only becomes valid after `endTok` is called.
     self.tok = .{
         .kind = undefined,
         .span = .{ .start = self._cur, .end = undefined },

@@ -1,3 +1,4 @@
+// zlint-disable suppressed-errors -- parser helpers assume allocations succeed for performance reasons
 //! ## TODO
 //! - [ ] make error recovery optional
 //!     - GraphQL servers ant to abort at the first syntax error.
@@ -6,11 +7,11 @@
 const ParserImpl = @This();
 
 const std = @import("std");
-const util = @import("../util.zig");
+const util = @import("../../util.zig");
 const Lexer = @import("../Lexer.zig");
 const Token = Lexer.Token;
-const Span = @import("../Span.zig");
-const Diagnostic = @import("../Diagnostic.zig");
+const Span = @import("../../Span.zig");
+const Diagnostic = @import("../../Diagnostic.zig");
 const Allocator = std.mem.Allocator;
 
 const types = @import("types.zig");

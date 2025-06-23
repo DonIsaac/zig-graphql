@@ -100,4 +100,4 @@ pub fn startOffset(tok: Token) Span.Offset {
     return tok.span.offset(.Start);
 }
 
-const Span = @import("../Span.zig");
+const Span = @import("../../Span.zig");

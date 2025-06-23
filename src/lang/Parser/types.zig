@@ -41,7 +41,7 @@ const std = @import("std");
 const t = std.testing;
 
 test parseListType {
-    const Span = @import("../Span.zig");
+    const Span = @import("../../Span.zig");
 
     var arena = std.heap.ArenaAllocator.init(t.allocator);
     defer arena.deinit();

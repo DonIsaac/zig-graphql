@@ -2,7 +2,7 @@ const std = @import("std");
 const LexerImpl = @import("LexerImpl.zig");
 const Token = @import("Token.zig");
 const ident = @import("ident.zig");
-const util = @import("../util.zig");
+const util = @import("../../util.zig");
 
 const ascii = std.ascii;
 

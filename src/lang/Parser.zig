@@ -2,7 +2,7 @@ const Parser = @This();
 
 const std = @import("std");
 const Ast = @import("Ast.zig");
-const Diagnostic = @import("Diagnostic.zig");
+const Diagnostic = @import("../Diagnostic.zig");
 const Allocator = std.mem.Allocator;
 
 const ParserImpl = @import("Parser/ParserImpl.zig");

@@ -1,5 +1,5 @@
 //! GraphQL AST data structure
-const Span = @import("Span.zig");
+const Span = @import("../Span.zig");
 
 /// Represents a complete GraphQL document
 pub const Document = struct {
