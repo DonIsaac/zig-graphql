@@ -1,5 +1,8 @@
+const std = @import("std");
 const Ast = @import("../Ast.zig");
 const ParserImpl = @import("./ParserImpl.zig");
+const ParserFn = ParserImpl.ParserFn;
+const Token = @import("../Lexer.zig").Token;
 
 pub fn parseName(self: *ParserImpl) !Ast.Name {
     const start = self.startSpan();
@@ -9,4 +12,29 @@ pub fn parseName(self: *ParserImpl) !Ast.Name {
         .value = span.slice(self.lexer.source()),
         .pos = span.offset(.Start),
     };
+}
+
+pub fn parseListOf(
+    comptime Node: type,
+    comptime Fn: ParserFn(Node),
+    comptime first_token: []const Token.Kind,
+) ParserFn([]Node) {
+    return struct {
+        pub fn parseList(p: *ParserImpl) ![]Node {
+            var nodes = try p.list(Node, 1);
+            while (p.atAny(first_token)) {
+                const node = try Fn(p);
+                try nodes.append(node);
+                _ = try p.eat(.comma);
+            }
+
+            if (p.options.lossless) {
+                return nodes.toOwnedSlice();
+            }
+            // attempt to resize the list's buffer in-place. If resizing would require
+            // a reallocation + copy, we'll leak the memory
+            _ = nodes.allocator.resize(nodes.allocatedSlice(), nodes.items.len);
+            return nodes.items;
+        }
+    }.parseList;
 }

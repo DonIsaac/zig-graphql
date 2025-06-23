@@ -1,6 +1,7 @@
 //! GraphQL AST data structure
 const std = @import("std");
 const Span = @import("Span.zig");
+const Token = @import("Lexer.zig").Token;
 
 const Ast = @This();
 
@@ -26,8 +27,8 @@ pub const ExecutableDefinition = union(enum) {
 pub const OperationDefinition = struct {
     operation_type: OperationType,
     name: ?Name,
-    variable_definitions: ?[]VariableDefinition,
-    directives: ?[]Directive,
+    variable_definitions: []VariableDefinition,
+    directives: []Directive,
     selection_set: Selection.Set,
     span: Span,
 };

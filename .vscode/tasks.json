@@ -15,7 +15,7 @@
             },
             "presentation": {
                 "echo": true,
-                "reveal": "silent",
+                "reveal": "never", // shows up in problems tab
                 "focus": false,
                 "panel": "shared",
                 "showReuseMessage": false,

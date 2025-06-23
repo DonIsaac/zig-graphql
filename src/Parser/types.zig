@@ -1,28 +1,18 @@
 const ParserImpl = @import("ParserImpl.zig");
 const Ast = @import("../Ast.zig");
 const expressions = @import("expressions.zig");
+const ParserFn = ParserImpl.ParserFn;
 
-pub fn parseType(self: *ParserImpl) !Ast.Type {
-    const start = self.startSpan();
-    if (self.at(.l_bracket)) {
-        const ty = try parseListType(self);
-        return if (self.at(.bang)) {
-            const span = self.endSpan(start);
-            try self.bump();
-            return allocType(self, Ast.Type.NonNull{ .type = try allocType(self, ty), .span = span });
-        } else {
-            return allocType(self, ty);
-        };
-    }
-
-    const ty = try parseNamedType(self);
-    const span = self.endSpan(start);
-    if (self.at(.bang)) {
-        try self.bump();
-        return allocType(self, Ast.Type.NonNull{ .type = try allocType(self, ty), .span = span });
-    }
-
-    return allocType(self, ty);
+pub fn parseType(p: *ParserImpl) !Ast.Type {
+    const start = p.startSpan();
+    const ty = try parseNamedOrListType(p);
+    //    NonNullType :
+    //        ListType `!`
+    //        NamedType `!`
+    _ = try p.eat(.bang) orelse return ty;
+    const span = p.endSpan(start);
+    // return allocType(p, Ast.Type.NonNull{ .type = ty, .span = span });
+    return p.ast.type(Ast.Type.NonNull{ .type = ty, .span = span });
 }
 
 pub fn parseNamedType(self: *ParserImpl) ParserImpl.Error!Ast.Type.Named {
@@ -40,23 +30,12 @@ fn parseListType(self: *ParserImpl) ParserImpl.Error!Ast.Type.List {
     return Ast.Type.List{ .type = ty, .span = span };
 }
 
-fn parseNamedOrListType(parser: *ParserImpl) ParserImpl.Error!Ast.Type {
-    return if (parser.at(.l_bracket))
-        parseListType(parser)
-    else
-        parseNamedType(parser);
-}
-
-fn allocType(self: *ParserImpl, ty: anytype) ParserImpl.Error!Ast.Type {
-    return switch (@TypeOf(ty)) {
-        Ast.Type.List => Ast.Type{ .list = try self.alloc(ty) },
-        Ast.Type.Named => Ast.Type{ .named = try self.alloc(ty) },
-        Ast.Type.NonNull => Ast.Type{ .non_null = try self.alloc(ty) },
-        else => {
-            @branchHint(.cold);
-            @compileError("unsupported type node: " ++ @typeName(@TypeOf(ty)));
-        },
-    };
+fn parseNamedOrListType(p: *ParserImpl) ParserImpl.Error!Ast.Type {
+    return if (p.at(.l_bracket)) |_| list: {
+        const ty = try parseListType(p);
+        p.assertNotWithoutAdvance(.r_bracket); // list parser should consume `]`
+        break :list p.ast.type(ty);
+    } else p.ast.type(try parseNamedType(p));
 }
 
 const std = @import("std");

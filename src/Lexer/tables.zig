@@ -23,7 +23,7 @@ pub const ASCII_TABLE: [128]ByteHandler = [_]ByteHandler{
     DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LTH, EQU, GTH, QUE, // 3
     AT_, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, // 4
     LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LBR, BSL, RBR, CRT, USC, // 5
-    BTK, LET, LET, LET, LET, L_e, L_f, LET, LET, LET, LET, LET, LET, L_m, LET, L_o, // 6
+    BTK, LET, LET, LET, LET, L_e, L_f, LET, LET, LET, LET, LET, LET, L_m, L_n, L_o, // 6
     LET, L_q, LET, L_s, L_t, LET, L_u, LET, LET, LET, LET, LCB, PIP, RCB, TLD, ERR, // 7
 };
 // zig-fmt: on
@@ -290,6 +290,10 @@ const L_f: ByteHandler = keywordOrName('f', &[_]struct { []const u8, Token.Kind 
 /// Lowercase m
 const L_m: ByteHandler = keywordOrName('m', &[_]struct { []const u8, Token.Kind }{
     .{ "utation", .kw_mutation },
+});
+
+const L_n: ByteHandler = keywordOrName('n', &[_]struct { []const u8, Token.Kind }{
+    .{ "ull", .null_value },
 });
 
 // const L_o

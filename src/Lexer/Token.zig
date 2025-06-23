@@ -32,8 +32,10 @@ pub const Kind = enum {
     dollar, // $
     l_paren, // (
     r_paren, // )
-    l_bracket, // [
-    r_bracket, // ]
+    /// `[`
+    l_bracket,
+    /// `]`
+    r_bracket,
     l_curly, // {
     r_curly, // }
     percent, // %
