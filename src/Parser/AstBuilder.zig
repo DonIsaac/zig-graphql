@@ -8,6 +8,7 @@
 //! produce a nice API.
 const AstBuilder = @This();
 const ParserImpl = @import("ParserImpl.zig");
+const Token = @import("../Lexer.zig").Token;
 const Ast = @import("../Ast.zig");
 const Span = @import("../Span.zig");
 const std = @import("std");
@@ -77,3 +78,5 @@ pub fn @"type"(self: *const AstBuilder, ty: anytype) Allocator.Error!Ast.Type {
         },
     };
 }
+
+// values

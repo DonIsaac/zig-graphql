@@ -46,9 +46,9 @@ pub fn ParserFn(T: type) type {
     return fn (p: *ParserImpl) ParserImpl.Error!T;
 }
 
-pub fn init(allocator_: Allocator, source: []const u8) ParserImpl {
+pub fn init(allocator_: Allocator, source_: []const u8) ParserImpl {
     // SAFETY: initialized at the start of parsing, and only read while parsing.
-    var p = ParserImpl{ .lexer = Lexer.init(allocator_, source), .cur = Token.empty, .prev_tok_end = 0, .options = .{}, .panicked = false, .ast = undefined };
+    var p = ParserImpl{ .lexer = Lexer.init(allocator_, source_), .cur = Token.empty, .prev_tok_end = 0, .options = .{}, .panicked = false, .ast = undefined };
     p.ast = AstBuilder.init(&p);
     return p;
 }
@@ -159,7 +159,7 @@ pub inline fn atAny(
     } else return false;
 }
 
-/// Consume the next token. Current token is updated.
+/// Consume the next token. Current token is updated. Returns the new, now current, token.
 pub fn nextToken(self: *ParserImpl) !?Lexer.Token {
     self.prev_tok_end = self.cur.span.end;
 
@@ -185,6 +185,10 @@ pub inline fn endSpan(self: *const ParserImpl, start: u32) Span {
     return .{ .start = start, .end = self.cur.span.end };
 }
 
+pub inline fn source(self: *const ParserImpl) []const u8 {
+    return self.lexer.source();
+}
+
 // =========================== ALLOCATION ============================
 
 // pub inline fn allocator(self: *const ParserImpl) Allocator {
@@ -206,6 +210,7 @@ pub inline fn endSpan(self: *const ParserImpl, start: u32) Span {
 
 // =========================== COMMON PARSE METHODS ============================
 
+// NOTE: do not use `pub usingnamespace`, i'd like incremental compilation tyvm
 pub const parseName = expressions.parseName;
 pub const parseType = types.parseType;
 pub const parseValue = values.parseValue;

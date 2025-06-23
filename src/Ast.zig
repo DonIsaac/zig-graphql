@@ -124,14 +124,14 @@ pub const Directive = struct {
 /// A GraphQL value
 pub const Value = union(enum) {
     variable: Variable,
-    int_value: Int,
-    float_value: Float,
-    string_value: String,
-    boolean_value: Boolean,
-    null_value: Null,
-    enum_value: Enum,
-    list_value: List,
-    object_value: Object,
+    int: Int,
+    float: Float,
+    string: String,
+    boolean: Boolean,
+    @"null": Null,
+    @"enum": Enum,
+    list: List,
+    object: Object,
 
     /// An integer value
     pub const Int = struct {

@@ -103,10 +103,11 @@ pub const Optional = struct {
     pub const none = Optional{ ._raw = empty };
 
     pub inline fn init(span: ?Span) Span.Optional {
-        return .{ ._raw = span orelse empty };
+        return .{ ._raw = if (span) |s| Optional.some(s) else .empty };
     }
 
     pub inline fn some(span: Span) Span.Optional {
+        std.debug.assert(!span.eql(.empty));
         return .{ ._raw = span };
     }
 

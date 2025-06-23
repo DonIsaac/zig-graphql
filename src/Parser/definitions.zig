@@ -3,6 +3,8 @@ const ParserImpl = @import("ParserImpl.zig");
 const Ast = @import("../Ast.zig");
 const Token = @import("../Lexer.zig").Token;
 const Span = @import("../Span.zig");
+
+const values = @import("values.zig");
 const diagnostics = @import("diagnostics.zig");
 
 pub fn parseExecutableDefinition(
@@ -175,16 +177,7 @@ fn parseVariablesDefinition(p: *ParserImpl) ![]Ast.VariableDefinition {
 ///        Variable `:` Type DefaultValue? Directives[Const]?
 fn parseVariableDefinition(p: *ParserImpl) !Ast.VariableDefinition {
     const start = p.startSpan();
-    const variable: Ast.Variable = v: {
-        // TODO: this technically allows for invalid productions like
-        // - `$,,,name`
-        // - `$
-        //    # wow im a comment
-        //    foobar`
-        try p.expect(.dollar);
-        const name = try p.parseName();
-        break :v .{ .name = name, .span = p.endSpan(start) };
-    };
+    const variable = try values.parseValue(p);
     try p.expect(.colon); // TODO: attempt to recover
 
     const ty = try p.parseType();
