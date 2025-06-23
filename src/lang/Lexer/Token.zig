@@ -5,10 +5,13 @@ kind: Kind,
 
 pub const empty = Token{ .span = .empty, .kind = .undetermined };
 
-pub const Kind = enum {
+pub const Kind = enum(u8) {
     undetermined,
 
-    // Keywords
+    // Name + Keywords.
+    // NOTE: keywords aren't in the GraphQL spec; they're lexed as names. However,
+    // having them be separate makes parsing easier.
+    name,
     kw_directive,
     kw_enum,
     kw_extend,
@@ -26,6 +29,7 @@ pub const Kind = enum {
     kw_true,
     kw_type,
     kw_union,
+    kw_null,
 
     // Punctuators
     bang, // !
@@ -69,14 +73,11 @@ pub const Kind = enum {
     double_quote, // "
     hash, // #
 
-    // Name and value tokens
-    name,
     int_value,
     float_value,
     string_value,
     block_string_value,
     boolean_value,
-    null_value,
 
     // whitespace, etc
     eof,
@@ -90,6 +91,11 @@ pub const Kind = enum {
             .whitespace, .line_terminator, .comment, .block_comment, .comma => true,
             else => false,
         };
+    }
+
+    pub inline fn isName(self: Kind) bool {
+        const repr: u8 = @intFromEnum(self);
+        return repr >= @intFromEnum(.name) and repr <= @intFromEnum(.kw_null);
     }
 };
 

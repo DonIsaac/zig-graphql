@@ -1,8 +1,9 @@
 const std = @import("std");
+const util = @import("../../util.zig");
 const LexerImpl = @import("LexerImpl.zig");
 const Token = @import("Token.zig");
 const ident = @import("ident.zig");
-const util = @import("../../util.zig");
+const values = @import("values.zig");
 
 const ascii = std.ascii;
 
@@ -30,8 +31,7 @@ pub const ASCII_TABLE: [128]ByteHandler = [_]ByteHandler{
 // ============================== BYTE HANDLERS ==============================
 
 fn ERR(lexer: *LexerImpl, byte: u8) Token.Kind {
-    lexer.fatalError("Unexpected byte: {c}", .{byte});
-    return .undetermined;
+    return lexer.fatalError(error.UnexpectedByte, "Unexpected byte: {c}", .{byte});
 }
 
 // ============================== WHITESPACE & LINE TERMINATORS ==============================
@@ -82,8 +82,7 @@ fn BNG(lexer: *LexerImpl, _: u8) Token.Kind {
 
 /// Double quote (0x22) - "
 fn QUO(lexer: *LexerImpl, _: u8) Token.Kind {
-    lexer.bump();
-    return .double_quote;
+    return values.lexStringValue(lexer);
 }
 
 /// Hash (0x23) - # (Comment start)
@@ -308,7 +307,7 @@ const L_m: ByteHandler = keywordOrName('m', &[_]struct { []const u8, Token.Kind 
 });
 
 const L_n: ByteHandler = keywordOrName('n', &[_]struct { []const u8, Token.Kind }{
-    .{ "ull", .null_value },
+    .{ "ull", .kw_null },
 });
 
 // const L_o

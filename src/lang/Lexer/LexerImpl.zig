@@ -13,6 +13,7 @@ const Allocator = std.mem.Allocator;
 const assert = std.debug.assert;
 
 errors: std.ArrayListUnmanaged(Diagnostic),
+fatal_error: ?Error,
 allocator: Allocator,
 source: []const u8,
 /// Current token being lexed
@@ -20,12 +21,20 @@ tok: Token,
 /// Current position in the source text
 _cur: u32,
 
+pub const Error = error{
+    UnexpectedByte,
+    OutOfMemory,
+    UnclosedString,
+    UnclosedBlockString,
+};
+
 pub fn init(allocator: Allocator, source: []const u8) LexerImpl {
     // SAFETY: source must be addressable by u32 offsets
     assert(source.len <= std.math.maxInt(u32));
     return .{
         .allocator = allocator,
         .errors = .{},
+        .fatal_error = null,
         .source = source,
         .tok = Token.empty,
         ._cur = 0,
@@ -57,7 +66,9 @@ pub fn next(self: *LexerImpl, comptime skip_ignored: Ignore) !?Token {
             .undetermined => {
                 @branchHint(.cold);
                 _ = self.endTok(.undetermined);
-                return error.UnexpectedByte;
+                // SAFETY: fatal_error is always set when first byte has been handled and
+                // undetermined gets returned
+                return self.fatal_error.?;
             },
             .whitespace, .line_terminator => |kind| if (skip_ignored.gte(.Whitespace)) continue else {
                 return self.endTok(kind);
@@ -70,6 +81,9 @@ pub fn next(self: *LexerImpl, comptime skip_ignored: Ignore) !?Token {
                 return self.endTok(kind);
             },
         }
+    } else if (self.fatal_error) |fatal_err| {
+        @branchHint(.cold);
+        return fatal_err;
     }
     return null;
 }
@@ -121,6 +135,14 @@ pub inline fn backtrack(self: *LexerImpl) void {
     self._cur -= 1;
 }
 
+pub inline fn eat(self: *LexerImpl, byte: u8) bool {
+    if (self.curr() == byte) {
+        self._cur += 1;
+        return true;
+    }
+    return false;
+}
+
 /// Get the current byte in the source.
 ///
 /// ## Panics
@@ -146,30 +168,31 @@ pub inline fn bump(self: *LexerImpl) void {
 }
 
 /// Advance the current position by 1. Panics if the current byte is not `byte`.
-pub inline fn expect(self: *LexerImpl, byte: u8) void {
+pub fn expect(self: *LexerImpl, byte: u8) callconv(util.callconv_inline) void {
     assert(self.curr() == byte);
     self._cur += 1;
 }
 
 /// Advance the current position by `n`. Panics if the new position is out of bounds.
-pub inline fn advanceBy(self: *LexerImpl, n: u32) void {
+pub fn advanceBy(self: *LexerImpl, n: u32) callconv(util.callconv_inline) void {
     assert(self._cur + n <= self.source.len);
     self._cur += n;
 }
-
-// pub fn expectUnsafe(self: *LexerImpl, byte: u8) callconv(util.callconv_inline) void {
-//     assert(self._cur[])
-// }
 
 // ============================== ERROR HANDLING ===============================
 
 /// Record an unrecoverable error. Lexing will stop immediately.
 pub fn fatalError(
     self: *LexerImpl,
+    fatal: Error,
     comptime message: []const u8,
     args: anytype,
-) callconv(util.callconv_inline) void {
+) callconv(util.callconv_inline) Token.Kind {
     @branchHint(.cold);
+
+    std.debug.assert(self.fatal_error == null);
+    self.fatal_error = fatal;
+
     const msg: []const u8 = if (comptime args.len == 0)
         message
     else
@@ -181,6 +204,7 @@ pub fn fatalError(
     if (util.is_debug) {
         self.tok = Token.empty;
     }
+    return .undetermined;
 }
 
 /// Record a recoverable error.
@@ -201,8 +225,3 @@ pub fn err(
     const diag = Diagnostic.init(self.span(), msg);
     self.errors.append(self.allocator, diag) catch unreachable;
 }
-
-pub const Error = error{
-    UnexpectedByte,
-    OutOfMemory,
-};

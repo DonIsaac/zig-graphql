@@ -26,7 +26,7 @@ pub fn parseValue(p: *ParserImpl, comptime is_const: bool) ParserImpl.Error!Ast.
             p.report(diagnostics.variableInConstValueContext(p.endSpan(start)));
             break :blk ParserImpl.Error.UnexpectedToken;
         } else Value{ .variable = try parseVariable(p) },
-        .null_value => .{ .null = .init(tok.span) },
+        .kw_null => .{ .null = .init(tok.span) },
         inline .kw_true, .kw_false => |v| Value{ .boolean = try parseBoolean(p, v == .kw_true) },
         .l_bracket => @panic("todo: ListValue[?Const]"),
         .l_curly => @panic("todo: ObjectValue[?Const]"),

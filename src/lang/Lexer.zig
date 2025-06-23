@@ -7,6 +7,8 @@ pub const Token = @import("Lexer/Token.zig");
 
 _impl: LexerImpl,
 
+pub const Error = LexerImpl.Error;
+
 pub fn init(allocator: Allocator, source_text: []const u8) Lexer {
     return .{ ._impl = LexerImpl.init(allocator, source_text) };
 }

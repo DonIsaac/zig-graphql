@@ -40,9 +40,11 @@ pub const Options = struct {
 pub const Error = error{
     UnexpectedEOF,
     UnexpectedToken,
-    OutOfMemory,
-    UnexpectedByte,
-};
+    UnclosedString,
+    UnclosedBlockString,
+    // OutOfMemory,
+    // UnexpectedByte,
+} || Lexer.Error || Allocator.Error;
 
 pub fn ParserFn(T: type) type {
     return fn (p: *ParserImpl) ParserImpl.Error!T;
@@ -106,8 +108,7 @@ pub inline fn expect(self: *ParserImpl, expected: Lexer.Token.Kind) !void {
 pub fn expectWithoutAdvance(self: *ParserImpl, comptime expected: Token.Kind) !void {
     _ = self.at(expected) orelse {
         @branchHint(.cold);
-        self.lexer._impl.fatalError("Expected {s}, got {s}", .{ @tagName(expected), @tagName(self.cur.kind) });
-        return error.UnexpectedToken;
+        return self.expectedToken(@tagName(expected));
     };
 }
 
@@ -186,18 +187,21 @@ pub fn nextToken(self: *ParserImpl) !?Lexer.Token {
         return tok;
     }
 
-    const tok = while (true) t: {
-        const next_tok = try self.lexer.next() orelse {
-            @branchHint(.unlikely);
-            return null;
-        };
-        switch (next_tok.kind) {
-            .comment => try self.comments.append(self.lexer._impl.allocator, next_tok),
-            else => {
-                @branchHint(.likely);
-                break :t next_tok;
-            },
+    const tok: Lexer.Token = t: {
+        while (true) {
+            const next_tok = try self.lexer.next() orelse {
+                @branchHint(.unlikely);
+                return null;
+            };
+            switch (next_tok.kind) {
+                .comment => try self.comments.append(self.lexer._impl.allocator, next_tok),
+                else => {
+                    @branchHint(.likely);
+                    break :t next_tok;
+                },
+            }
         }
+        unreachable;
     };
     self.cur = tok;
     return tok;
@@ -251,6 +255,12 @@ pub fn errors(self: *ParserImpl) []Diagnostic {
 pub fn report(self: *ParserImpl, diagnostic: Diagnostic) void {
     self.lexer._impl.errors.append(self.lexer._impl.allocator, diagnostic) catch unreachable;
 }
+pub fn reportFatal(self: *ParserImpl, err: Error, diagnostic: Diagnostic) Error {
+    self.report(diagnostic);
+    self.panicked = true;
+    self.lexer._impl._cur = @intCast(self.lexer._impl.source.len);
+    return err;
+}
 pub fn errAtCurr(self: *const ParserImpl, message: []const u8) Diagnostic {
     return Diagnostic{ .message = message, .span = self.cur.span };
 }
@@ -265,6 +275,18 @@ pub fn unexpectedToken(self: *ParserImpl) ParserImpl.Error {
     ) catch unreachable;
     self.report(Diagnostic{ .span = tok.span, .message = msg });
     return error.UnexpectedToken;
+}
+
+pub fn expectedToken(self: *ParserImpl, comptime expected: []const u8) ParserImpl.Error {
+    @branchHint(.cold);
+    const tok = self.cur;
+    const msg = std.fmt.allocPrint(
+        self.lexer._impl.allocator,
+        "Expected " ++ expected ++ ", got '{s}'",
+        .{@tagName(tok.kind)},
+    ) catch unreachable;
+
+    return self.reportFatal(error.UnexpectedToken, Diagnostic{ .span = tok.span, .message = msg });
 }
 
 test {
