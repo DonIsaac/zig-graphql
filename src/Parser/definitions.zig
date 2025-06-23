@@ -1,8 +1,6 @@
-const std = @import("std");
 const ParserImpl = @import("ParserImpl.zig");
 const Ast = @import("../Ast.zig");
 const Token = @import("../Lexer.zig").Token;
-const Span = @import("../Span.zig");
 
 const values = @import("values.zig");
 const types = @import("types.zig");
@@ -124,7 +122,7 @@ fn parseSelectionSet(p: *ParserImpl, comptime opt: bool) ParserImpl.Error!Ast.Se
     };
 }
 
-const parseSelectionList = ParserImpl.parseListOf(Ast.Selection, parseSelection, &[_]Token.Kind{.name, .spread});
+const parseSelectionList = ParserImpl.parseListOf(Ast.Selection, parseSelection, &[_]Token.Kind{ .name, .spread });
 fn parseSelection(p: *ParserImpl) !Ast.Selection {
     if (try p.eat(.spread)) |_| {
         if (p.at(.kw_on)) |_| {

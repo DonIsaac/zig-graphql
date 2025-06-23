@@ -8,7 +8,6 @@ const std = @import("std");
 const util = @import("../util.zig");
 const Lexer = @import("../Lexer.zig");
 const Token = Lexer.Token;
-const Ast = @import("../Ast.zig");
 const Span = @import("../Span.zig");
 const Diagnostic = @import("../Diagnostic.zig");
 const Allocator = std.mem.Allocator;

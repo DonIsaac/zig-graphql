@@ -1,9 +1,5 @@
 //! GraphQL AST data structure
-const std = @import("std");
 const Span = @import("Span.zig");
-const Token = @import("Lexer.zig").Token;
-
-const Ast = @This();
 
 /// Represents a complete GraphQL document
 pub const Document = struct {
@@ -128,7 +124,7 @@ pub const Value = union(enum) {
     float: Float,
     string: String,
     boolean: Boolean,
-    @"null": Null,
+    null: Null,
     @"enum": Enum,
     list: List,
     object: Object,

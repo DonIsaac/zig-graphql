@@ -4,7 +4,6 @@ const Token = @import("Token.zig");
 const ident = @import("ident.zig");
 const util = @import("../util.zig");
 
-const mem = std.mem;
 const ascii = std.ascii;
 
 pub fn handleASCIIByte(lexer: *LexerImpl, byte: u8) Token.Kind {
@@ -16,7 +15,7 @@ const ByteHandler = *const fn (lexer: *LexerImpl, byte: u8) Token.Kind;
 
 // zig-fmt: off
 pub const ASCII_TABLE: [128]ByteHandler = [_]ByteHandler{
-//  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+    //  0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, WSP, LF_, VT_, FF_, CR_, ERR, ERR, // 0
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
     WSP, BNG, QUO, HSH, DOL, PCT, AMP, SQT, LPA, RPA, AST, PLS, COM, MIN, DOT, FSL, // 2

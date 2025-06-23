@@ -8,7 +8,6 @@
 //! produce a nice API.
 const AstBuilder = @This();
 const ParserImpl = @import("ParserImpl.zig");
-const Token = @import("../Lexer.zig").Token;
 const Ast = @import("../Ast.zig");
 const Span = @import("../Span.zig");
 const std = @import("std");

@@ -1,4 +1,3 @@
-const std = @import("std");
 const util = @import("../util.zig");
 const Token = @import("../Lexer.zig").Token;
 const Diagnostic = @import("../Diagnostic.zig");

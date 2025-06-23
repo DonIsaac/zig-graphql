@@ -1,7 +1,6 @@
 const Parser = @This();
 
 const std = @import("std");
-const Lexer = @import("Lexer.zig");
 const Ast = @import("Ast.zig");
 const Diagnostic = @import("Diagnostic.zig");
 const Allocator = std.mem.Allocator;
@@ -55,7 +54,7 @@ test Parser {
     defer arena.deinit();
     var parser = Parser.init(arena.allocator(), query);
     const doc = parser.parseDocument() catch |e| {
-        for(parser.errors()) |err| {
+        for (parser.errors()) |err| {
             std.debug.print("{s}\n", .{err.message});
         }
         return e;

@@ -2,7 +2,6 @@
 //! you are making an executable, the convention is to delete this file and
 //! start with main.zig instead.
 const std = @import("std");
-const testing = std.testing;
 
 pub const Lexer = @import("Lexer.zig");
 pub const Parser = @import("Parser.zig");

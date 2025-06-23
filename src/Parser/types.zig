@@ -1,7 +1,6 @@
 const ParserImpl = @import("ParserImpl.zig");
 const Ast = @import("../Ast.zig");
 const expressions = @import("expressions.zig");
-const ParserFn = ParserImpl.ParserFn;
 
 pub fn parseType(p: *ParserImpl) !Ast.Type {
     const start = p.startSpan();

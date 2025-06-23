@@ -1,4 +1,3 @@
-const std = @import("std");
 const util = @import("../util.zig");
 const ParserImpl = @import("ParserImpl.zig");
 const Ast = @import("../Ast.zig");

@@ -5,16 +5,16 @@ const LexerImpl = @import("LexerImpl.zig");
 const Token = @import("Token.zig");
 
 // Name ::
-// 
+//
 // - NameStart NameContinue\* [lookahead != NameContinue]
-// 
+//
 // NameStart ::
-// 
+//
 // - Letter
 // - `_`
-// 
+//
 // NameContinue ::
-// 
+//
 // - Letter
 // - Digit
 // - `_`
