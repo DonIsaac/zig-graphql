@@ -10,5 +10,5 @@ pub const lang = struct {
 };
 
 test {
-    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(lang);
 }

@@ -73,3 +73,49 @@ test "spot check - valid" {
         };
     }
 }
+
+// IntValue :: IntegerPart [lookahead != {Digit, `.`, NameStart}]
+// 
+// IntegerPart ::
+// 
+// - NegativeSign? 0
+// - NegativeSign? NonZeroDigit Digit\*
+// 
+// NegativeSign :: -
+// 
+// NonZeroDigit :: Digit but not `0`
+test "integer parsing" {
+    const debug = false;
+    const Kind = Lexer.Token.Kind;
+    const TestCase = struct { []const u8, []const Kind };
+    const test_cases = &[_]TestCase{
+        .{ "123", &[_]Kind{ .int_value } },
+        .{ "0", &[_]Kind{ .int_value } },
+        .{ "-0", &[_]Kind{ .int_value } },
+        .{ "+0", &[_]Kind{ .plus, .int_value } },
+        .{ "0-", &[_]Kind{ .int_value, .minus } },
+    };
+
+    for (test_cases) |tc| {
+        const src, const expected = tc;
+        var arena = ArenaAllocator.init(allocator);
+        defer arena.deinit();
+        var lexer = Lexer.init(arena.allocator(), src);
+
+        var toks = std.ArrayList(Kind).init(arena.allocator());
+        defer toks.deinit();
+
+        while (try lexer.next()) |t| {
+            if (debug) {
+                const s = t.span;
+                const tok_name = lexer._impl.source[s.start..s.end];
+                std.debug.print("{}: {s}\n", .{ t.kind, tok_name });
+            }
+            try toks.append(t.kind);
+        }
+        std.testing.expectEqualSlices(Kind, expected, toks.items) catch |e| {
+            std.debug.print("\nSource:\n\n{s}\n\n", .{src});
+            return e;
+        };
+    }
+}

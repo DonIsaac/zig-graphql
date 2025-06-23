@@ -91,7 +91,8 @@ fn HSH(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     while (lexer.curr()) |c| {
         switch (c) {
-            '\n' => {
+            // LineTerminator
+            '\n', '\r' => {
                 return .comment;
             },
             else => lexer.bump(),
@@ -100,67 +101,71 @@ fn HSH(lexer: *LexerImpl, _: u8) Token.Kind {
     return .comment;
 }
 
-/// Dollar (0x24) - $
+/// Dollar (0x24) - `$`
 fn DOL(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .dollar;
 }
 
-/// Percent (0x25) - %
+/// Percent (0x25) - `%`
 fn PCT(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .percent;
 }
 
-/// Ampersand (0x26) - &
+/// Ampersand (0x26) - `&`
 fn AMP(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .amp;
 }
 
-/// Single quote (0x27) - '
+/// Single quote (0x27) - `'`
 fn SQT(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .single_quote;
 }
 
-/// Left parenthesis (0x28) - (
+/// Left parenthesis (0x28) - `(`
 fn LPA(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .l_paren;
 }
 
-/// Right parenthesis (0x29) - )
+/// Right parenthesis (0x29) - `)`
 fn RPA(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .r_paren;
 }
 
-/// Asterisk (0x2A) - *
+/// Asterisk (0x2A) - `*`
 fn AST(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .asterisk;
 }
 
-/// Plus (0x2B) - +
+/// Plus (0x2B) - `+`
 fn PLS(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .plus;
 }
 
-/// Comma (0x2C) - ,
+/// Comma (0x2C) - `,`
 fn COM(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .comma;
 }
 
-/// Minus (0x2D) - -
+/// Minus (0x2D) - `-`
 fn MIN(lexer: *LexerImpl, _: u8) Token.Kind {
-    lexer.bump();
+    lexer.expect('-');
+    if (lexer.curr()) |c| {
+        if (ascii.isDigit(c)) return DIG(lexer, c);
+    }
+
     return .minus;
 }
 
-/// Period (0x2E) - .
+/// Period (0x2E) - `.`
 fn DOT(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
     return .period;
@@ -358,5 +363,17 @@ fn lexNameRemaining(lexer: *LexerImpl) Token.Kind {
 /// Digits (0x30-0x39) - 0-9
 fn DIG(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
+    // Consume all consecutive digits
+    while (lexer.curr()) |c| {
+        switch (c) {
+            '0'...'9' => {
+                lexer.bump();
+                continue;
+            },
+            // we may be in the middle of a float, not an int
+            'e', 'E', '.' => @panic("todo: FloatValue"),
+            else => break,
+        }
+    }
     return .int_value;
 }
