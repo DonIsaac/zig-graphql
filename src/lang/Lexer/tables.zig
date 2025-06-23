@@ -160,6 +160,10 @@ fn MIN(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.expect('-');
     if (lexer.curr()) |c| {
         if (ascii.isDigit(c)) return DIG(lexer, c);
+        if (c == '.') {
+            lexer.bump();
+            return lexFractionalPart(lexer);
+        }
     }
 
     return .minus;
@@ -168,6 +172,13 @@ fn MIN(lexer: *LexerImpl, _: u8) Token.Kind {
 /// Period (0x2E) - `.`
 fn DOT(lexer: *LexerImpl, _: u8) Token.Kind {
     lexer.bump();
+    // Check if this is the start of a fractional part
+    if (lexer.curr()) |c| {
+        if (c >= '0' and c <= '9') {
+            // We have a fractional part without an integer part (e.g., .5)
+            return lexFractionalPart(lexer);
+        }
+    }
     return .period;
 }
 
@@ -370,10 +381,74 @@ fn DIG(lexer: *LexerImpl, _: u8) Token.Kind {
                 lexer.bump();
                 continue;
             },
-            // we may be in the middle of a float, not an int
-            'e', 'E', '.' => @panic("todo: FloatValue"),
+            // Check for fractional part
+            '.' => {
+                lexer.bump();
+                return lexFractionalPart(lexer);
+            },
+            // Check for exponent part
+            'e', 'E' => {
+                lexer.bump();
+                return lexExponentPart(lexer);
+            },
             else => break,
         }
     }
     return .int_value;
+}
+
+fn lexFractionalPart(lexer: *LexerImpl) Token.Kind {
+    // We've already consumed '.', now we need at least one digit
+    if (lexer.curr()) |c| {
+        if (c >= '0' and c <= '9') {
+            // Consume all digits in fractional part
+            while (lexer.curr()) |digit| {
+                if (digit < '0' or digit > '9') {
+                    break;
+                }
+                lexer.bump();
+            }
+            
+            // Check for exponent part
+            if (lexer.curr()) |exp| {
+                if (exp == 'e' or exp == 'E') {
+                    lexer.bump();
+                    return lexExponentPart(lexer);
+                }
+            }
+            
+            return .float_value;
+        }
+    }
+    
+    // If we don't have digits after '.', this is invalid
+    // For now, we'll return period and let the parser handle the error
+    return .period;
+}
+
+fn lexExponentPart(lexer: *LexerImpl) Token.Kind {
+    // We've already consumed 'e' or 'E', now check for optional sign
+    if (lexer.curr()) |c| {
+        if (c == '+' or c == '-') {
+            lexer.bump();
+        }
+    }
+    
+    // We need at least one digit in the exponent
+    if (lexer.curr()) |c| {
+        if (c >= '0' and c <= '9') {
+            // Consume all digits in exponent
+            while (lexer.curr()) |digit| {
+                if (digit < '0' or digit > '9') {
+                    break;
+                }
+                lexer.bump();
+            }
+            return .float_value;
+        }
+    }
+    
+    // If we don't have digits in exponent, this is invalid
+    // For now, we'll return the token type based on what we've seen so far
+    return .float_value;
 }

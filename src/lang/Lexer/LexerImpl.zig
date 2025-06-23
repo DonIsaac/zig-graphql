@@ -106,6 +106,21 @@ pub inline fn span(self: *LexerImpl) Span {
     return Span{ .start = self.tok.span.start, .end = self._cur };
 }
 
+/// Get the next character in the source. Returns `null` if the end of the
+/// source is reached.
+pub inline fn nextChar(self: *LexerImpl) ?u8 {
+    self._cur += 1;
+    if (self._cur >= self.source.len) return null;
+    return self.source[self._cur];
+}
+
+/// Move backwards by 1 character. Calling at the start of the source is Illegal
+/// Behavior.
+pub inline fn backtrack(self: *LexerImpl) void {
+    std.debug.assert(self._cur > 0);
+    self._cur -= 1;
+}
+
 /// Get the current byte in the source.
 ///
 /// ## Panics
