@@ -36,8 +36,10 @@ pub const Kind = enum {
     l_bracket,
     /// `]`
     r_bracket,
-    l_curly, // {
-    r_curly, // }
+    /// `{`
+    l_curly,
+    /// `}`
+    r_curly,
     percent, // %
     amp, // &
     spread, // ...

@@ -14,6 +14,7 @@ const Diagnostic = @import("../Diagnostic.zig");
 const Allocator = std.mem.Allocator;
 
 const types = @import("types.zig");
+const values = @import("values.zig");
 const expressions = @import("expressions.zig");
 const AstBuilder = @import("AstBuilder.zig");
 
@@ -52,11 +53,11 @@ pub fn init(allocator_: Allocator, source: []const u8) ParserImpl {
     return p;
 }
 
-pub fn parseDocument(self: *ParserImpl) !Ast.Document {
-    var definitions = try std.ArrayListUnmanaged(Ast.Definition).initCapacity(self.allocator(), 1);
-    _ = &definitions;
-    @panic("todo");
-}
+// pub fn parseDocument(self: *ParserImpl) !Ast.Document {
+//     var definitions = try std.ArrayListUnmanaged(Ast.Definition).initCapacity(self.allocator(), 1);
+//     _ = &definitions;
+//     @panic("todo");
+// }
 // =============================================================================
 
 /// Get the next token without consuming it.
@@ -80,7 +81,7 @@ pub fn eat(self: *ParserImpl, comptime expected: Token.Kind) !?Token {
     return null;
 }
 
-/// Ensures the current token matches `expected` and moves to the next token.
+/// Ensures the current token matches `expected` and advances to the next token.
 pub inline fn expect(self: *ParserImpl, expected: Lexer.Token.Kind) !void {
     try self.expectWithoutAdvance(expected);
     try self.bump();
@@ -95,7 +96,8 @@ pub fn expectWithoutAdvance(self: *ParserImpl, comptime expected: Token.Kind) !v
     };
 }
 
-/// Consumes the current token, panicking if it doesn't match `expected`.
+/// Consumes the current token, invoking Illegal Behavior if it
+/// doesn't match `expected`.
 ///
 /// Whereas `expect` is used to report syntax errors that the parser must handle
 /// during normal operations, failures by `assert` indicate a bug in the program.
@@ -185,26 +187,28 @@ pub inline fn endSpan(self: *const ParserImpl, start: u32) Span {
 
 // =========================== ALLOCATION ============================
 
-pub inline fn allocator(self: *const ParserImpl) Allocator {
-    return self.lexer._impl.allocator;
-}
-pub fn create(self: *const ParserImpl, ast_node: anytype) Allocator.Error!*@TypeOf(ast_node) {
-    const T = @TypeOf(ast_node);
-    const ptr: *T = try self.allocator().create(T);
-    ptr.* = ast_node;
-    return ptr;
-}
-pub inline fn list(
-    self: *const ParserImpl,
-    comptime T: type,
-    comptime capacity: usize,
-) Allocator.Error!std.ArrayList(T) {
-    return std.ArrayList(T).initCapacity(self.allocator(), capacity);
-}
+// pub inline fn allocator(self: *const ParserImpl) Allocator {
+//     return self.lexer._impl.allocator;
+// }
+// pub fn create(self: *const ParserImpl, ast_node: anytype) Allocator.Error!*@TypeOf(ast_node) {
+//     const T = @TypeOf(ast_node);
+//     const ptr: *T = try self.allocator().create(T);
+//     ptr.* = ast_node;
+//     return ptr;
+// }
+// pub inline fn list(
+//     self: *const ParserImpl,
+//     comptime T: type,
+//     comptime capacity: usize,
+// ) Allocator.Error!std.ArrayList(T) {
+//     return std.ArrayList(T).initCapacity(self.allocator(), capacity);
+// }
 
 // =========================== COMMON PARSE METHODS ============================
 
 pub const parseName = expressions.parseName;
+pub const parseType = types.parseType;
+pub const parseValue = values.parseValue;
 pub const parseListOf = expressions.parseListOf;
 
 // =============================================================================
@@ -220,7 +224,7 @@ pub fn errAtCurr(self: *const ParserImpl, message: []const u8) Diagnostic {
     return Diagnostic{ .message = message, .span = self.cur.span };
 }
 
-pub fn unexpectedToken(self: *ParserImpl) Error {
+pub fn unexpectedToken(self: *ParserImpl) ParserImpl.Error {
     @branchHint(.cold);
     const tok = self.cur;
     const msg = std.fmt.allocPrint(self.lexer._impl.allocator, "Unexpected token: '{s}'", .{@tagName(tok.kind)}) catch unreachable;

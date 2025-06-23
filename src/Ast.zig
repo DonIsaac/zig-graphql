@@ -49,24 +49,15 @@ pub const Selection = union(enum) {
     /// A selection set containing fields, fragment spreads, and inline fragments
     pub const Set = struct {
         selections: []Selection,
-        // span: Span,
-        pub inline fn span(self: Set) Span {
-            if (self.selections.len == 0) {
-                @branchHint(.unlikely);
-                return Span.empty;
-            }
-
-            const first = self.selections[0].span();
-            const last = self.selections[0].span();
-            return Span{ .start = first.start, .end = last.end };
-        }
+        span: Span,
+        pub const empty: Selection.Set = .{ .selections = &[_]Selection{} };
     };
 
     /// A field selection
     pub const Field = struct {
         alias: ?Name,
         name: Name,
-        arguments: ?[]Argument,
+        arguments: ?Argument.List,
         directives: ?[]Directive,
         selection_set: ?Selection.Set,
         span: Span,
@@ -117,6 +108,10 @@ pub const Argument = struct {
     name: Name,
     value: Value,
     span: Span,
+    pub const List = struct {
+        args: []Argument,
+        span: Span,
+    };
 };
 
 /// A directive
