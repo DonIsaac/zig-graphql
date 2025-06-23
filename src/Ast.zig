@@ -50,7 +50,7 @@ pub const Selection = union(enum) {
     pub const Set = struct {
         selections: []Selection,
         span: Span,
-        pub const empty: Selection.Set = .{ .selections = &[_]Selection{} };
+        pub const empty: Selection.Set = .{ .selections = &[_]Selection{}, .span = .empty };
     };
 
     /// A field selection
@@ -167,6 +167,9 @@ pub const Value = union(enum) {
     /// A null value
     pub const Null = struct {
         pos: Span.Offset,
+        pub inline fn init(span_: Span) Null {
+            return .{ .pos = span_.offset(.Start) };
+        }
         pub inline fn span(self: Null) Span {
             return self.pos.keywordSpan("null");
         }
@@ -175,7 +178,6 @@ pub const Value = union(enum) {
     /// An enum value
     pub const Enum = struct {
         value: Name,
-        span: Span,
     };
 
     /// A list value

@@ -21,7 +21,7 @@ pub fn parseListOf(
 ) ParserFn([]Node) {
     return struct {
         pub fn parseList(p: *ParserImpl) ![]Node {
-            var nodes = try p.list(Node, 1);
+            var nodes = try p.ast.list(Node, 1);
             while (p.atAny(first_token)) {
                 const node = try Fn(p);
                 try nodes.append(node);
@@ -29,8 +29,10 @@ pub fn parseListOf(
             }
 
             if (p.options.lossless) {
+                // fully reclaims unused memory if resizing isnt possible
                 return nodes.toOwnedSlice();
             }
+
             // attempt to resize the list's buffer in-place. If resizing would require
             // a reallocation + copy, we'll leak the memory
             _ = nodes.allocator.resize(nodes.allocatedSlice(), nodes.items.len);

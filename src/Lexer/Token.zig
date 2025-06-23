@@ -42,7 +42,8 @@ pub const Kind = enum {
     r_curly,
     percent, // %
     amp, // &
-    spread, // ...
+    /// `...`
+    spread,
     single_quote, // '
     asterisk, // *
     plus, // +
@@ -91,5 +92,12 @@ pub const Kind = enum {
         };
     }
 };
+
+pub fn eql(self: Token, other: Token) bool {
+    return self.kind == other.kind and self.span.eql(other.span);
+}
+pub fn startOffset(tok: Token) Span.Offset {
+    return tok.span.offset(.Start);
+}
 
 const Span = @import("../Span.zig");

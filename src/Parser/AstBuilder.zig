@@ -31,6 +31,12 @@ fn parser(self: *const AstBuilder) *const ParserImpl {
     return @alignCast(@fieldParentPtr("ast", self));
 }
 
+// misc
+
+pub inline fn slice(self: *const AstBuilder, spannable: anytype) []const u8 {
+    return Span.spanned(spannable).slice(self.parser().source());
+}
+
 // ================================ ALLOCATIONS ================================
 
 pub fn allocator(self: *const AstBuilder) Allocator {
@@ -61,8 +67,8 @@ pub inline fn list(
 /// Create a `Name` token covering some thing that can be spanned (via `Span.spanned`)
 pub fn name(self: *const AstBuilder, span_like_thingy: anytype) Ast.Name {
     const span = Span.spanned(span_like_thingy);
-    const slice = span.slice(self.parser().lexer.source());
-    return Ast.Name{ .value = slice, .pos = span.offset(.Start) };
+    const slice_ = span.slice(self.parser().source());
+    return Ast.Name{ .value = slice_, .pos = span.offset(.Start) };
 }
 
 /// Create an `Ast.Type` node from some inner `Ast.Type.*`

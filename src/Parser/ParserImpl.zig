@@ -68,7 +68,7 @@ pub fn peek(self: *ParserImpl) !?Lexer.Token {
     };
 }
 
-pub fn bump(self: *ParserImpl) !void {
+pub fn bump(self: *ParserImpl) ParserImpl.Error!void {
     _ = try self.nextToken();
 }
 
@@ -149,13 +149,15 @@ pub inline fn at(
 ) ?Token {
     return if (self.cur.kind == expected) self.cur else null;
 }
+
+/// Returns `true` if current token is any of the expected kinds.
 pub inline fn atAny(
     self: *const ParserImpl,
     comptime expected: []const Token.Kind,
 ) bool {
     comptime std.debug.assert(expected.len > 0);
     inline for (expected) |e| {
-        if (self.at(e)) return true;
+        if (self.at(e)) |_| return true;
     } else return false;
 }
 
