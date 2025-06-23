@@ -29,8 +29,7 @@ pub fn parseExecutableDefinition(
 ///        SelectionSet
 fn parseOperationDefinition(p: *ParserImpl) !Ast.OperationDefinition {
     const start = p.startSpan();
-    // if (p.at(.l_bracket)) |_| return parseSelectionSet(p, false);
-    if (p.at(.l_bracket)) |_| @panic("todo: parseSelectionSet");
+    if (p.at(.l_bracket)) |_| return p.ast.anonymousOperationDefinition(try parseSelectionSet(p, false));
 
     // TODO: maybe collapse with switch in `parseExecutableDefinition`. depends
     // on tradeoff: perf vs clarity-from-following-grammar-exactly
@@ -38,7 +37,7 @@ fn parseOperationDefinition(p: *ParserImpl) !Ast.OperationDefinition {
         .kw_query => .query,
         .kw_mutation => .mutation,
         .kw_subscription => .subscription,
-        .l_bracket => @panic("todo: parseSelectionSet"), //return parseSelectionSet(p, false),
+        .l_bracket => unreachable,
         else => return p.unexpectedToken(),
     };
     try p.bump();

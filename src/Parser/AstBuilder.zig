@@ -66,7 +66,7 @@ pub inline fn list(
 
 /// Convert a list of AST nodes into a slice, reclaiming unused memory if
 /// possible. Caller owns the returned allocation.
-/// 
+///
 /// Some caveats:
 /// - `list_` cannot be freed after calling this function. In some cases, freeing will be a no-op, but in others
 ///   it will invalidate the returned slice's allocation.
@@ -109,3 +109,16 @@ pub fn @"type"(self: *const AstBuilder, ty: anytype) Allocator.Error!Ast.Type {
 }
 
 // values
+
+// definitions
+
+pub inline fn anonymousOperationDefinition(_: *const AstBuilder, selection_set: Ast.Selection.Set) Ast.OperationDefinition {
+    return Ast.OperationDefinition{
+        .operation_type = .query,
+        .name = null,
+        .directives = &[_]Ast.Directive{},
+        .variable_definitions = &[_]Ast.VariableDefinition{},
+        .selection_set = selection_set,
+        .span = selection_set.span,
+    };
+}
