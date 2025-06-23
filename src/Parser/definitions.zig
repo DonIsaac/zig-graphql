@@ -1,3 +1,4 @@
+const util = @import("../util.zig");
 const ParserImpl = @import("ParserImpl.zig");
 const Ast = @import("../Ast.zig");
 const Token = @import("../Lexer.zig").Token;
@@ -44,7 +45,7 @@ fn parseOperationDefinition(p: *ParserImpl) !Ast.OperationDefinition {
     const name: ?Ast.Name = if (p.at(.name)) |_| try p.parseName() else null;
     const vars: []Ast.VariableDefinition = try parseVariablesDefinition(p);
     const directives: []Ast.Directive = try parseDirectives(p);
-    const selection_set: Ast.Selection.Set = if (p.at(.l_curly)) |_| try parseSelectionSet(p, false) else .empty;
+    const selection_set: Ast.Selection.Set = try parseSelectionSet(p, true);
 
     return Ast.OperationDefinition{
         .operation_type = op,
@@ -104,7 +105,12 @@ fn parseFragmentName(
     return name;
 }
 
-fn parseSelectionSet(p: *ParserImpl, comptime opt: bool) ParserImpl.Error!Ast.Selection.Set {
+/// `SelectionSet : { Selection+ }`
+fn parseSelectionSet(
+    p: *ParserImpl,
+    /// Parse `SelectionSet?`, returning an empty set if not at `{`
+    comptime opt: bool,
+) ParserImpl.Error!Ast.Selection.Set {
     const start = p.startSpan();
 
     if (comptime opt) {
@@ -113,8 +119,15 @@ fn parseSelectionSet(p: *ParserImpl, comptime opt: bool) ParserImpl.Error!Ast.Se
         try p.expect(.l_curly);
     }
 
+    // early check for `{}`
+    if (p.eat(.r_curly)) |_| {
+        @branchHint(.cold);
+        p.report(diagnostics.listCannotBeEmpty("Field Selections", p.endSpan(start)));
+    }
+
     const selections = try parseSelectionList(p);
     try p.expect(.r_curly);
+    util.debugAssert(selections.len > 0);
     return Ast.Selection.Set{
         .selections = selections,
         .span = p.endSpan(start),
@@ -161,16 +174,16 @@ fn parseField(p: *ParserImpl) !Ast.Selection.Field {
 /// `Arguments[Const] : `(` Argument[?Const]+ `)`
 pub fn parseArguments(p: *ParserImpl, comptime opt: bool, comptime @"const": bool) !Ast.Argument.List {
     const start = p.startSpan();
-    
+
     if (comptime opt) {
         _ = try p.eat(.l_paren) orelse return Ast.Argument.List.empty;
     } else {
         try p.expect(.l_paren);
     }
-    
+
     const args = try parseArgumentList(p, @"const");
     try p.expect(.r_paren);
-    
+
     return Ast.Argument.List{
         .args = args,
         .span = p.endSpan(start),
@@ -183,7 +196,7 @@ fn parseArgument(p: *ParserImpl, comptime @"const": bool) !Ast.Argument {
     const name = try p.parseName();
     try p.expect(.colon);
     const value = try p.parseValue(@"const");
-    
+
     return Ast.Argument{
         .name = name,
         .value = value,
@@ -198,7 +211,7 @@ fn parseArgumentList(p: *ParserImpl, comptime @"const": bool) ![]Ast.Argument {
             return parseArgument(p_, is_const);
         }
     };
-    
+
     const parseArgList = ParserImpl.parseListOf(Ast.Argument, Wrapper.parse, &[_]Token.Kind{.name});
     return parseArgList(p);
 }
