@@ -19,15 +19,16 @@ const values = @import("values.zig");
 const expressions = @import("expressions.zig");
 const AstBuilder = @import("AstBuilder.zig");
 
+options: Options,
 lexer: Lexer,
 /// previously peeked token
 lookahead: ?Lexer.Token = null,
 cur: Lexer.Token,
 /// End offset of previous token
 prev_tok_end: u32,
-options: Options,
 panicked: bool,
 ast: AstBuilder,
+comments: std.ArrayListUnmanaged(Lexer.Token),
 
 pub const Options = struct {
     /// Do not leak memory when constructing Ast nodes. Less memory
@@ -48,13 +49,23 @@ pub fn ParserFn(T: type) type {
 }
 
 pub fn init(allocator_: Allocator, source_: []const u8) ParserImpl {
-    // SAFETY: initialized at the start of parsing, and only read while parsing.
-    var p = ParserImpl{ .lexer = Lexer.init(allocator_, source_), .cur = Token.empty, .prev_tok_end = 0, .options = .{}, .panicked = false, .ast = undefined };
+    var p = ParserImpl{
+        .lexer = Lexer.init(allocator_, source_),
+        .cur = Token.empty,
+        .prev_tok_end = 0,
+        .options = .{},
+        .panicked = false,
+        // SAFETY: initialized below
+        .ast = undefined,
+        .comments = .{},
+    };
     p.ast = AstBuilder.init(&p);
     return p;
 }
 pub fn deinit(self: *ParserImpl) void {
     self.lexer.deinit();
+    self.comments.deinit(self.lexer._impl.allocator);
+    self.* = undefined;
 }
 
 // pub fn parseDocument(self: *ParserImpl) !Ast.Document {
@@ -175,9 +186,18 @@ pub fn nextToken(self: *ParserImpl) !?Lexer.Token {
         return tok;
     }
 
-    const tok = try self.lexer.next() orelse {
-        @branchHint(.unlikely);
-        return null;
+    const tok = while (true) t: {
+        const next_tok = try self.lexer.next() orelse {
+            @branchHint(.unlikely);
+            return null;
+        };
+        switch (next_tok.kind) {
+            .comment => try self.comments.append(self.lexer._impl.allocator, next_tok),
+            else => {
+                @branchHint(.likely);
+                break :t next_tok;
+            },
+        }
     };
     self.cur = tok;
     return tok;
