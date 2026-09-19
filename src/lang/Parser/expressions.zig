@@ -23,18 +23,18 @@ pub fn parseListOf(
             var nodes = try p.ast.list(Node, 1);
             while (p.atAny(first_token)) {
                 const node = try Fn(p);
-                try nodes.append(node);
+                try nodes.append(p.allocator(), node);
                 _ = try p.eat(.comma);
             }
 
             if (p.options.lossless) {
                 // fully reclaims unused memory if resizing isnt possible
-                return nodes.toOwnedSlice();
+                return nodes.toOwnedSlice(p.allocator());
             }
 
             // attempt to resize the list's buffer in-place. If resizing would require
             // a reallocation + copy, we'll leak the memory
-            _ = nodes.allocator.resize(nodes.allocatedSlice(), nodes.items.len);
+            _ = p.allocator().resize(nodes.allocatedSlice(), nodes.items.len);
             return nodes.items;
         }
     }.parseList;

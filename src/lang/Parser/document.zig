@@ -16,7 +16,7 @@ pub fn parseDocument(p: *ParserImpl, comptime executable_only: bool) !Ast.Docume
             .{ .executable = try definitions.parseExecutableDefinition(p) }
         else
             try definitions.parseDefinition(p);
-        try defs.append(def);
+        try defs.append(p.allocator(), def);
     }
 
     const span = p.endSpan(start);

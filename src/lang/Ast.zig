@@ -178,6 +178,9 @@ pub const Directive = struct {
 };
 
 /// A GraphQL value
+///
+/// ## References
+/// - [2.9 Input Values](https://spec.graphql.org/draft/#sec-Input-Values)
 pub const Value = union(enum) {
     variable: Variable,
     int: Int,

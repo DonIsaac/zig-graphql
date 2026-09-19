@@ -2,7 +2,6 @@ const std = @import("std");
 const Lexer = @import("../../Lexer.zig");
 
 const testing = std.testing;
-const allocator = std.testing.allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
 test "valid examples" {
@@ -11,7 +10,7 @@ test "valid examples" {
     _ = &files;
 
     while (files.next()) |f| {
-        var arena = ArenaAllocator.init(allocator);
+        var arena = ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
         const src = std.mem.trim(u8, f, &std.ascii.whitespace);
         var lexer = Lexer.init(arena.allocator(), src);
@@ -52,12 +51,13 @@ test "spot check - valid" {
 
     for (test_cases) |tc| {
         const src, const expected = tc;
-        var arena = ArenaAllocator.init(allocator);
+        var arena = ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
         var lexer = Lexer.init(arena.allocator(), src);
+        const allocator = arena.allocator();
 
-        var toks = std.ArrayList(Kind).init(arena.allocator());
-        defer toks.deinit();
+        var toks: std.ArrayList(Kind) = .empty;
+        defer toks.deinit(allocator);
 
         while (try lexer.next()) |t| {
             if (debug) {
@@ -65,7 +65,7 @@ test "spot check - valid" {
                 const tok_name = lexer._impl.source[s.start..s.end];
                 std.debug.print("{}: {s}\n", .{ t.kind, tok_name });
             }
-            try toks.append(t.kind);
+            try toks.append(allocator, t.kind);
         }
         std.testing.expectEqualSlices(Kind, expected, toks.items) catch |e| {
             std.debug.print("\nSource:\n\n{s}\n\n", .{src});
@@ -98,12 +98,13 @@ test "integer lexing" {
 
     for (test_cases) |tc| {
         const src, const expected = tc;
-        var arena = ArenaAllocator.init(allocator);
+        var arena = ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
-        var lexer = Lexer.init(arena.allocator(), src);
+        const allocator = arena.allocator();
+        var lexer = Lexer.init(allocator, src);
 
-        var toks = std.ArrayList(Kind).init(arena.allocator());
-        defer toks.deinit();
+        var toks: std.ArrayList(Kind) = .empty;
+        defer toks.deinit(allocator);
 
         while (try lexer.next()) |t| {
             if (debug) {
@@ -111,7 +112,7 @@ test "integer lexing" {
                 const tok_name = lexer._impl.source[s.start..s.end];
                 std.debug.print("{}: {s}\n", .{ t.kind, tok_name });
             }
-            try toks.append(t.kind);
+            try toks.append(allocator, t.kind);
         }
         std.testing.expectEqualSlices(Kind, expected, toks.items) catch |e| {
             std.debug.print("\nSource:\n\n{s}\n\n", .{src});
@@ -161,15 +162,13 @@ test "float lexing" {
 
     for (test_cases) |tc| {
         const src, const expected = tc;
-        var arena = ArenaAllocator.init(allocator);
+        var arena = ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
         var lexer = Lexer.init(arena.allocator(), src);
 
-        var kinds = std.ArrayList(Kind).init(arena.allocator());
-        defer kinds.deinit();
+        var kinds: std.ArrayList(Kind) = .empty;
 
-        var toks = std.ArrayList(Lexer.Token).init(arena.allocator());
-        defer toks.deinit();
+        var toks: std.ArrayList(Lexer.Token) = .empty;
 
         while (try lexer.next()) |t| {
             if (debug) {
@@ -177,8 +176,8 @@ test "float lexing" {
                 const tok_name = lexer._impl.source[s.start..s.end];
                 std.debug.print("{}: {s}\n", .{ t.kind, tok_name });
             }
-            try kinds.append(t.kind);
-            try toks.append(t);
+            try kinds.append(arena.allocator(), t.kind);
+            try toks.append(arena.allocator(), t);
         }
         std.testing.expectEqualSlices(Kind, expected, kinds.items) catch |e| {
             std.debug.print("\nSource:\n\n{s}\n\n", .{src});
@@ -225,12 +224,13 @@ test "string lexing" {
 
     for (test_cases) |tc| {
         const src, const expected = tc;
-        var arena = ArenaAllocator.init(allocator);
+        var arena = ArenaAllocator.init(std.testing.allocator);
         defer arena.deinit();
-        var lexer = Lexer.init(arena.allocator(), src);
+        const allocator = arena.allocator();
+        var lexer = Lexer.init(allocator, src);
 
-        var kinds = std.ArrayList(Kind).init(arena.allocator());
-        defer kinds.deinit();
+        var kinds: std.ArrayList(Kind) = .empty;
+        defer kinds.deinit(allocator);
 
         // var toks = std.ArrayList(Lexer.Token).init(arena.allocator());
         // defer toks.deinit();
@@ -241,7 +241,7 @@ test "string lexing" {
                 const tok_name = lexer._impl.source[s.start..s.end];
                 std.debug.print("{}: {s}\n", .{ t.kind, tok_name });
             }
-            try kinds.append(t.kind);
+            try kinds.append(allocator, t.kind);
         }
         std.testing.expectEqualSlices(Kind, expected, kinds.items) catch |e| {
             std.debug.print("\nSource:\n\n{s}\n\n", .{src});

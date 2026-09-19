@@ -1,5 +1,5 @@
 //! A range within source text.
-//! 
+//!
 //! It is a logical error to create a `Span` with `start > end`. Most functions
 //! will invoke Illegal Behavior if this is the case.
 const Span = @This();
@@ -109,7 +109,7 @@ pub const Offset = enum(u32) {
 };
 
 /// A memory-efficient representation of `?Span`.
-/// 
+///
 /// This type is incapable of storing empty spans (i.e. `(0, 0)`).
 pub const Optional = struct {
     _raw: Span,

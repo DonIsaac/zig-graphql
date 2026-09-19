@@ -59,7 +59,7 @@ pub fn init(allocator_: Allocator, source_: []const u8) ParserImpl {
         .panicked = false,
         // SAFETY: initialized below
         .ast = undefined,
-        .comments = .{},
+        .comments = .empty,
     };
     p.ast = AstBuilder.init(&p);
     return p;
@@ -221,9 +221,9 @@ pub inline fn source(self: *const ParserImpl) []const u8 {
 
 // =========================== ALLOCATION ============================
 
-// pub inline fn allocator(self: *const ParserImpl) Allocator {
-//     return self.lexer._impl.allocator;
-// }
+pub inline fn allocator(self: *const ParserImpl) Allocator {
+    return self.lexer._impl.allocator;
+}
 // pub fn create(self: *const ParserImpl, ast_node: anytype) Allocator.Error!*@TypeOf(ast_node) {
 //     const T = @TypeOf(ast_node);
 //     const ptr: *T = try self.allocator().create(T);

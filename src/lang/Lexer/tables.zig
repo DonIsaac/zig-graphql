@@ -8,7 +8,7 @@ const values = @import("values.zig");
 const ascii = std.ascii;
 
 pub fn handleASCIIByte(lexer: *LexerImpl, byte: u8) Token.Kind {
-    util.debugAssert(ascii.isASCII(byte));
+    util.debugAssert(ascii.isAscii(byte));
     return @call(.auto, ASCII_TABLE[byte], .{ lexer, byte });
 }
 
@@ -292,10 +292,7 @@ fn TLD(lexer: *LexerImpl, _: u8) Token.Kind {
 // ============================== LETTERS & DIGITS ==============================
 
 /// Lowercase e
-const L_e: ByteHandler = keywordOrName('e', &[_]struct { []const u8, Token.Kind }{
-    .{ "num", .kw_enum },
-    .{ "xtend", .kw_extend }
-});
+const L_e: ByteHandler = keywordOrName('e', &[_]struct { []const u8, Token.Kind }{ .{ "num", .kw_enum }, .{ "xtend", .kw_extend } });
 
 const L_f: ByteHandler = keywordOrName('f', &[_]struct { []const u8, Token.Kind }{
     .{ "alse", .kw_false },
@@ -409,7 +406,7 @@ fn lexFractionalPart(lexer: *LexerImpl) Token.Kind {
                 }
                 lexer.bump();
             }
-            
+
             // Check for exponent part
             if (lexer.curr()) |exp| {
                 if (exp == 'e' or exp == 'E') {
@@ -417,11 +414,11 @@ fn lexFractionalPart(lexer: *LexerImpl) Token.Kind {
                     return lexExponentPart(lexer);
                 }
             }
-            
+
             return .float_value;
         }
     }
-    
+
     // If we don't have digits after '.', this is invalid
     // For now, we'll return period and let the parser handle the error
     return .period;
@@ -434,7 +431,7 @@ fn lexExponentPart(lexer: *LexerImpl) Token.Kind {
             lexer.bump();
         }
     }
-    
+
     // We need at least one digit in the exponent
     if (lexer.curr()) |c| {
         if (c >= '0' and c <= '9') {
@@ -448,7 +445,7 @@ fn lexExponentPart(lexer: *LexerImpl) Token.Kind {
             return .float_value;
         }
     }
-    
+
     // If we don't have digits in exponent, this is invalid
     // For now, we'll return the token type based on what we've seen so far
     return .float_value;

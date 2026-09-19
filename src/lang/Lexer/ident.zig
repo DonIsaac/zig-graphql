@@ -26,6 +26,8 @@ pub fn isNameContinue(c: u8) bool {
     return ascii.isAlphanumeric(c) or c == '_';
 }
 
+pub const nameContinueChars: []const u8 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
+
 // pub fn isKeywordWithoutFirstChar(LexerImpl: *const LexerImpl, comptime kws: []const struct{ []const u8, Token.Kind }) ?Token.Kind {
 pub fn isKeywordWithoutFirstChar(lexer: *LexerImpl, comptime kws: anytype) ?Token.Kind {
     inline for (kws) |kw| {
@@ -36,4 +38,10 @@ pub fn isKeywordWithoutFirstChar(lexer: *LexerImpl, comptime kws: anytype) ?Toke
         }
     }
     return null;
+}
+
+test nameContinueChars {
+    for (nameContinueChars) |c| {
+        try std.testing.expect(isNameContinue(c));
+    }
 }

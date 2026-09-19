@@ -33,7 +33,7 @@ pub fn init(allocator: Allocator, source: []const u8) LexerImpl {
     assert(source.len <= std.math.maxInt(u32));
     return .{
         .allocator = allocator,
-        .errors = .{},
+        .errors = .empty,
         .fatal_error = null,
         .source = source,
         .tok = Token.empty,
