@@ -17,7 +17,7 @@ const Allocator = std.mem.Allocator;
 const types = @import("types.zig");
 const values = @import("values.zig");
 const expressions = @import("expressions.zig");
-const AstBuilder = @import("AstBuilder.zig");
+const Ast = @import("../Ast.zig");
 
 options: Options,
 lexer: Lexer,
@@ -27,7 +27,7 @@ cur: Lexer.Token,
 /// End offset of previous token
 prev_tok_end: u32,
 panicked: bool,
-ast: AstBuilder,
+ast: Ast.Builder,
 comments: std.ArrayListUnmanaged(Lexer.Token),
 
 pub const Options = struct {
@@ -61,7 +61,7 @@ pub fn init(allocator_: Allocator, source_: []const u8) ParserImpl {
         .ast = undefined,
         .comments = .empty,
     };
-    p.ast = AstBuilder.init(&p);
+    p.ast = .init(&p);
     return p;
 }
 pub fn deinit(self: *ParserImpl) void {
@@ -70,11 +70,6 @@ pub fn deinit(self: *ParserImpl) void {
     self.* = undefined;
 }
 
-// pub fn parseDocument(self: *ParserImpl) !Ast.Document {
-//     var definitions = try std.ArrayListUnmanaged(Ast.Definition).initCapacity(self.allocator(), 1);
-//     _ = &definitions;
-//     @panic("todo");
-// }
 // =============================================================================
 
 /// Get the next token without consuming it.
