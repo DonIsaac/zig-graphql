@@ -11,7 +11,7 @@ watch:
 
 # Build and run tests.
 test:
-    zig build --summary all
+    zig build test --summary all
 
 # Rebuild + run tests when files change.
 test-watch *ARGS:

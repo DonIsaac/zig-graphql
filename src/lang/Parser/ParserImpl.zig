@@ -85,7 +85,7 @@ pub fn bump(self: *ParserImpl) ParserImpl.Error!void {
 }
 
 /// Similar to `.at`, but consumes and returns the current token on match.
-pub fn eat(self: *ParserImpl, comptime expected: Token.Kind) !?Token {
+pub fn eat(self: *ParserImpl, comptime expected: Token.Kind) Error!?Token {
     if (self.at(expected)) |tok| {
         try self.bump();
         return tok;

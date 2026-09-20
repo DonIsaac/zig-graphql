@@ -12,7 +12,7 @@ const diagnostics = @import("diagnostics.zig");
 ///     Definition:
 ///         ExecutableDefinition
 ///         TypeSystemDefinitionOrExtensions
-pub fn parseDefinition(p: *ParserImpl) !Ast.Definition {
+pub fn parseDefinition(p: *ParserImpl) !Ast.Document.Definition {
     // TODO: type system definition
     return .{ .executable = try parseExecutableDefinition(p) };
 }
@@ -64,7 +64,7 @@ fn parseOperationDefinition(p: *ParserImpl) !Ast.Operation.Definition {
 }
 
 ///    fragment FragmentName TypeCondition Directives? SelectionSet
-fn parseFragmentDefinition(p: *ParserImpl) !Ast.FragmentDefinition {
+fn parseFragmentDefinition(p: *ParserImpl) !Ast.Fragment.Definition {
     const start = p.startSpan();
     try p.assert(.kw_fragment);
 
@@ -81,7 +81,7 @@ fn parseFragmentDefinition(p: *ParserImpl) !Ast.FragmentDefinition {
     const type_cond = try parseTypeCondition(p);
     const directives: []Ast.Directive = try parseDirectives(p);
     const selection_set = try parseSelectionSet(p, false);
-    return Ast.FragmentDefinition{
+    return Ast.Fragment.Definition{
         .name = name,
         .type_condition = type_cond,
         .directives = directives,
@@ -97,7 +97,7 @@ fn parseFragmentName(
     /// - `true`: report a syntax error
     /// - `false`: panic
     comptime handle_kw_on: bool,
-) !Ast.Name {
+) ParserImpl.Error!Ast.Name {
     if (comptime handle_kw_on) {
         if (try p.eat(.kw_on)) |on| {
             @branchHint(.unlikely);

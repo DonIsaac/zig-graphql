@@ -150,4 +150,49 @@
         },
         .errors = .{},
     },
+    // .{
+    //     // https://spec.graphql.org/draft/#example-916f4
+    //     .source =
+    //     \\"""
+    //     \\A simple GraphQL schema which is well described.
+    //     \\"""
+    //     \\schema {
+    //     \\  query: Query
+    //     \\}
+    //     \\
+    //     \\"""
+    //     \\Root type for all your query operations
+    //     \\"""
+    //     \\type Query {
+    //     \\  """
+    //     \\  Translates a string from a given language into a different language.
+    //     \\  """
+    //     \\  translate(
+    //     \\    "The original language that `text` is provided in."
+    //     \\    fromLanguage: Language
+    //     \\
+    //     \\    "The translated language to be returned."
+    //     \\    toLanguage: Language
+    //     \\
+    //     \\    "The text to be translated."
+    //     \\    text: String
+    //     \\  ): String
+    //     \\}
+    //     \\
+    //     \\"""
+    //     \\The set of languages supported by `translate`.
+    //     \\"""
+    //     \\enum Language {
+    //     \\  "English"
+    //     \\  EN
+    //     \\
+    //     \\  "French"
+    //     \\  FR
+    //     \\
+    //     \\  "Chinese"
+    //     \\  CH
+    //     \\}
+    //     ,
+    //     .ast = null,
+    // },
 }
