@@ -18,7 +18,7 @@ pub fn deinit(self: *Lexer) void {
     self.* = undefined;
 }
 
-pub fn next(self: *Lexer) !?Token {
+pub fn next(self: *Lexer) Error!?Token {
     return self._impl.next(.Whitespace);
 }
 

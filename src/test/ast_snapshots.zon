@@ -1,0 +1,153 @@
+.{
+    .{
+        .source =
+        \\query AuthorsWithBooks {
+        \\  getAuthors(minBooks: 1) {
+        \\    id,
+        \\    name,
+        \\    books {
+        \\      title
+        \\      description
+        \\    }
+        \\  }
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .executable = .{ .operation = .{
+                    .operation_type = .query,
+                    .name = .{
+                        .value = "AuthorsWithBooks",
+                        .pos = .{ .value = 6 },
+                    },
+                    .variable_definitions = .{},
+                    .directives = .{},
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .field = .{
+                                .alias = null,
+                                .name = .{
+                                    .value = "getAuthors",
+                                    .pos = .{ .value = 27 },
+                                },
+                                .arguments = .{
+                                    .args = .{
+                                        .{
+                                            .name = .{
+                                                .value = "minBooks",
+                                                .pos = .{ .value = 38 },
+                                            },
+                                            .value = .{ .int = .{
+                                                .value = "1",
+                                                .span = .{ .start = 48, .end = 49 },
+                                            } },
+                                            .span = .{ .start = 38, .end = 49 },
+                                        },
+                                    },
+                                    .span = .{ .start = 37, .end = 50 },
+                                },
+                                .directives = .{},
+                                .selection_set = .{
+                                    .selections = .{
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "id",
+                                                .pos = .{ .value = 57 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{},
+                                            .selection_set = .{
+                                                .selections = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .span = .{ .start = 57, .end = 59 },
+                                        } },
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "name",
+                                                .pos = .{ .value = 65 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{},
+                                            .selection_set = .{
+                                                .selections = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .span = .{ .start = 65, .end = 69 },
+                                        } },
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "books",
+                                                .pos = .{ .value = 75 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{},
+                                            .selection_set = .{
+                                                .selections = .{
+                                                    .{ .field = .{
+                                                        .alias = null,
+                                                        .name = .{
+                                                            .value = "title",
+                                                            .pos = .{ .value = 89 },
+                                                        },
+                                                        .arguments = .{
+                                                            .args = .{},
+                                                            .span = .{ .start = 0, .end = 0 },
+                                                        },
+                                                        .directives = .{},
+                                                        .selection_set = .{
+                                                            .selections = .{},
+                                                            .span = .{ .start = 0, .end = 0 },
+                                                        },
+                                                        .span = .{ .start = 89, .end = 94 },
+                                                    } },
+                                                    .{ .field = .{
+                                                        .alias = null,
+                                                        .name = .{
+                                                            .value = "description",
+                                                            .pos = .{ .value = 101 },
+                                                        },
+                                                        .arguments = .{
+                                                            .args = .{},
+                                                            .span = .{ .start = 0, .end = 0 },
+                                                        },
+                                                        .directives = .{},
+                                                        .selection_set = .{
+                                                            .selections = .{},
+                                                            .span = .{ .start = 0, .end = 0 },
+                                                        },
+                                                        .span = .{ .start = 101, .end = 112 },
+                                                    } },
+                                                },
+                                                .span = .{ .start = 81, .end = 118 },
+                                            },
+                                            .span = .{ .start = 75, .end = 118 },
+                                        } },
+                                    },
+                                    .span = .{ .start = 51, .end = 122 },
+                                },
+                                .span = .{ .start = 27, .end = 122 },
+                            } },
+                        },
+                        .span = .{ .start = 23, .end = 124 },
+                    },
+                    .span = .{ .start = 0, .end = 124 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 124 },
+        },
+        .errors = .{},
+    },
+}

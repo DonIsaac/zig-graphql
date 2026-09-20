@@ -94,7 +94,7 @@ pub fn eat(self: *ParserImpl, comptime expected: Token.Kind) !?Token {
 }
 
 /// Ensures the current token matches `expected` and advances to the next token.
-pub inline fn expect(self: *ParserImpl, expected: Lexer.Token.Kind) !void {
+pub inline fn expect(self: *ParserImpl, comptime expected: Lexer.Token.Kind) !void {
     try self.expectWithoutAdvance(expected);
     try self.bump();
 }
@@ -207,7 +207,7 @@ pub inline fn startSpan(self: *const ParserImpl) u32 {
 }
 
 pub inline fn endSpan(self: *const ParserImpl, start: u32) Span {
-    return .{ .start = start, .end = self.cur.span.end };
+    return .{ .start = start, .end = self.prev_tok_end };
 }
 
 pub inline fn source(self: *const ParserImpl) []const u8 {
@@ -219,23 +219,9 @@ pub inline fn source(self: *const ParserImpl) []const u8 {
 pub inline fn allocator(self: *const ParserImpl) Allocator {
     return self.lexer._impl.allocator;
 }
-// pub fn create(self: *const ParserImpl, ast_node: anytype) Allocator.Error!*@TypeOf(ast_node) {
-//     const T = @TypeOf(ast_node);
-//     const ptr: *T = try self.allocator().create(T);
-//     ptr.* = ast_node;
-//     return ptr;
-// }
-// pub inline fn list(
-//     self: *const ParserImpl,
-//     comptime T: type,
-//     comptime capacity: usize,
-// ) Allocator.Error!std.ArrayList(T) {
-//     return std.ArrayList(T).initCapacity(self.allocator(), capacity);
-// }
 
 // =========================== COMMON PARSE METHODS ============================
 
-// NOTE: do not use `pub usingnamespace`, i'd like incremental compilation tyvm
 pub const parseName = expressions.parseName;
 pub const parseType = types.parseType;
 pub const parseValue = values.parseValue;
@@ -246,16 +232,19 @@ pub const parseListOf = expressions.parseListOf;
 pub fn errors(self: *ParserImpl) []Diagnostic {
     return self.lexer._impl.errors.items;
 }
+
 /// Report a non fatal error.
 pub fn report(self: *ParserImpl, diagnostic: Diagnostic) void {
     self.lexer._impl.errors.append(self.lexer._impl.allocator, diagnostic) catch unreachable;
 }
+
 pub fn reportFatal(self: *ParserImpl, err: Error, diagnostic: Diagnostic) Error {
     self.report(diagnostic);
     self.panicked = true;
     self.lexer._impl._cur = @intCast(self.lexer._impl.source.len);
     return err;
 }
+
 pub fn errAtCurr(self: *const ParserImpl, message: []const u8) Diagnostic {
     return Diagnostic{ .message = message, .span = self.cur.span };
 }
@@ -285,6 +274,6 @@ pub fn expectedToken(self: *ParserImpl, comptime expected: []const u8) ParserImp
 }
 
 test {
-    std.testing.refAllDecls(@This());
+    std.testing.refAllDecls(ParserImpl);
     std.testing.refAllDecls(types);
 }

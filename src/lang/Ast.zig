@@ -310,11 +310,11 @@ pub const TypeSystem = struct {
     pub const Definition = union(enum) {
         schema: Schema.Definition,
         scalar: ScalarType.Definition,
-        object: ObjectTypeDefinition,
-        interface: InterfaceTypeDefinition,
-        @"union": UnionTypeDefinition,
-        @"enum": EnumTypeDefinition,
-        input_object: InputObjectTypeDefinition,
+        object: ObjectType.Definition,
+        interface: InterfaceType.Definition,
+        @"union": UnionType.Definition,
+        @"enum": EnumType.Definition,
+        input_object: InputObjectType.Definition,
         directive: DirectiveDefinition,
     };
 
@@ -322,11 +322,11 @@ pub const TypeSystem = struct {
     pub const Extension = union(enum) {
         schema: Schema.Extension,
         scalar: ScalarType.Extension,
-        object: ObjectTypeExtension,
-        interface: InterfaceTypeExtension,
-        @"union": UnionTypeExtension,
-        @"enum": EnumTypeExtension,
-        input_object: InputObjectTypeExtension,
+        object: ObjectType.Extension,
+        interface: InterfaceType.Extension,
+        @"union": UnionType.Extension,
+        @"enum": EnumType.Extension,
+        input_object: InputObjectType.Extension,
     };
 };
 
@@ -371,94 +371,103 @@ pub const ScalarType = struct {
     };
 };
 
-/// Object type definition
-pub const ObjectTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    interfaces: ?[]Type.Named,
-    directives: ?[]Directive,
-    fields: ?[]FieldDefinition,
-    span: Span,
+pub const ObjectType = struct {
+    /// Object type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        interfaces: ?[]Type.Named,
+        directives: ?[]Directive,
+        fields: ?[]FieldDefinition,
+        span: Span,
+    };
+
+    /// Object type extension
+    pub const Extension = struct {
+        name: Name,
+        interfaces: ?[]Type.Named,
+        directives: ?[]Directive,
+        fields: ?[]FieldDefinition,
+        span: Span,
+    };
 };
 
-/// Object type extension
-pub const ObjectTypeExtension = struct {
-    name: Name,
-    interfaces: ?[]Type.Named,
-    directives: ?[]Directive,
-    fields: ?[]FieldDefinition,
-    span: Span,
+pub const InterfaceType = struct {
+    /// Interface type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        interfaces: ?[]Type.Named,
+        directives: ?[]Directive,
+        fields: ?[]FieldDefinition,
+        span: Span,
+    };
+    /// Interface type extension
+    pub const Extension = struct {
+        name: Name,
+        interfaces: ?[]Type.Named,
+        directives: ?[]Directive,
+        fields: ?[]FieldDefinition,
+        span: Span,
+    };
 };
 
-/// Interface type definition
-pub const InterfaceTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    interfaces: ?[]Type.Named,
-    directives: ?[]Directive,
-    fields: ?[]FieldDefinition,
-    span: Span,
+pub const UnionType = struct {
+    /// Union type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        directives: ?[]Directive,
+        types: ?[]Type.Named,
+        span: Span,
+    };
+
+    /// Union type extension
+    pub const Extension = struct {
+        name: Name,
+        directives: ?[]Directive,
+        types: ?[]Type.Named,
+        span: Span,
+    };
 };
 
-/// Interface type extension
-pub const InterfaceTypeExtension = struct {
-    name: Name,
-    interfaces: ?[]Type.Named,
-    directives: ?[]Directive,
-    fields: ?[]FieldDefinition,
-    span: Span,
+pub const EnumType = struct {
+    /// Enum type definition
+    /// TODO: parse
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        directives: ?[]Directive,
+        values: ?[]EnumValueDefinition,
+        span: Span,
+    };
+
+    /// Enum type extension
+    pub const Extension = struct {
+        name: Name,
+        directives: ?[]Directive,
+        values: ?[]EnumValueDefinition,
+        span: Span,
+    };
 };
 
-/// Union type definition
-pub const UnionTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    directives: ?[]Directive,
-    types: ?[]Type.Named,
-    span: Span,
-};
+pub const InputObjectType = struct {
+    /// Input object type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        directives: ?[]Directive,
+        fields: ?[]InputValueDefinition,
+        span: Span,
+    };
 
-/// Union type extension
-pub const UnionTypeExtension = struct {
-    name: Name,
-    directives: ?[]Directive,
-    types: ?[]Type.Named,
-    span: Span,
-};
-
-/// Enum type definition
-/// TODO: parse
-pub const EnumTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    directives: ?[]Directive,
-    values: ?[]EnumValueDefinition,
-    span: Span,
-};
-
-/// Enum type extension
-pub const EnumTypeExtension = struct {
-    name: Name,
-    directives: ?[]Directive,
-    values: ?[]EnumValueDefinition,
-    span: Span,
-};
-
-/// Input object type definition
-pub const InputObjectTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    directives: ?[]Directive,
-    fields: ?[]InputValueDefinition,
-    span: Span,
-};
-
-/// Input object type extension
-pub const InputObjectTypeExtension = struct {
-    name: Name,
-    directives: ?[]Directive,
-    fields: ?[]InputValueDefinition,
-    span: Span,
+    /// Input object type extension
+    pub const Extension = struct {
+        name: Name,
+        directives: ?[]Directive,
+        fields: ?[]InputValueDefinition,
+        span: Span,
+    };
 };
 
 /// Directive definition

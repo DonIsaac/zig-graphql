@@ -16,4 +16,5 @@ pub const Span = @import("Span.zig");
 
 test {
     std.testing.refAllDecls(lang);
+    _ = @import("test/ast_regression.zig");
 }
