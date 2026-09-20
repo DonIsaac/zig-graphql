@@ -24,12 +24,7 @@ pub fn parseDefinition(p: *ParserImpl) !Ast.Definition {
 ///         FragmentDefinition
 pub fn parseExecutableDefinition(
     p: *ParserImpl,
-) !Ast.ExecutableDefinition {
-    // return switch (p.cur.kind) {
-    //     .kw_query, .kw_mutation, .kw_subscription => .{ .operation = try parseOperationDefinition(p) },
-    //     .kw_fragment => .{ .fragment = try parseFragmentDefinition(p) },
-    //     else => p.unexpectedToken(),
-    // };
+) !Ast.Executable.Definition {
     return if (p.at(.kw_fragment)) |_|
         .{ .fragment = try parseFragmentDefinition(p) }
     else
@@ -39,13 +34,13 @@ pub fn parseExecutableDefinition(
 ///    OperationDefinition :
 ///        OperationType Name? VariablesDefinition? Directives? SelectionSet
 ///        SelectionSet
-fn parseOperationDefinition(p: *ParserImpl) !Ast.OperationDefinition {
+fn parseOperationDefinition(p: *ParserImpl) !Ast.Operation.Definition {
     const start = p.startSpan();
     if (p.at(.l_bracket)) |_| return p.ast.anonymousOperationDefinition(try parseSelectionSet(p, false));
 
     // TODO: maybe collapse with switch in `parseExecutableDefinition`. depends
     // on tradeoff: perf vs clarity-from-following-grammar-exactly
-    const op: Ast.OperationType = switch (p.cur.kind) {
+    const op: Ast.Operation.Type = switch (p.cur.kind) {
         .kw_query => .query,
         .kw_mutation => .mutation,
         .kw_subscription => .subscription,
@@ -54,11 +49,11 @@ fn parseOperationDefinition(p: *ParserImpl) !Ast.OperationDefinition {
     };
     try p.bump();
     const name: ?Ast.Name = if (p.at(.name)) |_| try p.parseName() else null;
-    const vars: []Ast.VariableDefinition = try parseVariablesDefinition(p);
+    const vars: []Ast.Variable.Definition = try parseVariablesDefinition(p);
     const directives: []Ast.Directive = try parseDirectives(p);
     const selection_set: Ast.Selection.Set = try parseSelectionSet(p, true);
 
-    return Ast.OperationDefinition{
+    return Ast.Operation.Definition{
         .operation_type = op,
         .name = name,
         .variable_definitions = vars,
@@ -267,18 +262,18 @@ fn parseDirective(p: *ParserImpl) !Ast.Directive {
 }
 
 /// Parses `VariablesDefinition?`
-///     VariablesDefinition : `(` VariableDefinition+ `)`
-fn parseVariablesDefinition(p: *ParserImpl) ![]Ast.VariableDefinition {
-    const parseVarDefList = ParserImpl.parseListOf(Ast.VariableDefinition, parseVariableDefinition, &[_]Token.Kind{.dollar});
-    _ = try p.eat(.l_paren) orelse return &[_]Ast.VariableDefinition{};
+///     VariablesDefinition : `(` Variable.Definition+ `)`
+fn parseVariablesDefinition(p: *ParserImpl) ![]Ast.Variable.Definition {
+    const parseVarDefList = ParserImpl.parseListOf(Ast.Variable.Definition, parseVariableDefinition, &[_]Token.Kind{.dollar});
+    _ = try p.eat(.l_paren) orelse return &[_]Ast.Variable.Definition{};
     const vars = try parseVarDefList(p);
     try p.expect(.r_paren);
     return vars;
 }
 
-///    VariableDefinition :
+///    Variable.Definition :
 ///        Variable `:` Type DefaultValue? Directives[Const]?
-fn parseVariableDefinition(p: *ParserImpl) !Ast.VariableDefinition {
+fn parseVariableDefinition(p: *ParserImpl) !Ast.Variable.Definition {
     const start = p.startSpan();
     const variable = try values.parseVariable(p);
     try p.expect(.colon); // TODO: attempt to recover
@@ -287,7 +282,7 @@ fn parseVariableDefinition(p: *ParserImpl) !Ast.VariableDefinition {
     const default_value = if (try p.eat(.equal)) |_| try p.parseValue(true) else null;
     // TODO:  Directives
 
-    return Ast.VariableDefinition{
+    return Ast.Variable.Definition{
         .variable = variable,
         .type = ty,
         .default_value = default_value,

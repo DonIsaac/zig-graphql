@@ -116,12 +116,12 @@ pub fn @"type"(self: *const AstBuilder, ty: anytype) Allocator.Error!Ast.Type {
 
 // definitions
 
-pub inline fn anonymousOperationDefinition(_: *const AstBuilder, selection_set: Ast.Selection.Set) Ast.OperationDefinition {
-    return Ast.OperationDefinition{
+pub inline fn anonymousOperationDefinition(_: *const AstBuilder, selection_set: Ast.Selection.Set) Ast.Operation.Definition {
+    return Ast.Operation.Definition{
         .operation_type = .query,
         .name = null,
         .directives = &[_]Ast.Directive{},
-        .variable_definitions = &[_]Ast.VariableDefinition{},
+        .variable_definitions = &[_]Ast.Variable.Definition{},
         .selection_set = selection_set,
         .span = selection_set.span,
     };

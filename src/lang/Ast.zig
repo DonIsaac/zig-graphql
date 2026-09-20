@@ -20,60 +20,58 @@ pub const Document = struct {
         }
         return has_operation;
     }
+};
 
+pub const Executable = struct {
     /// An executable document
-    pub const Executable = struct {
-        definitions: []ExecutableDefinition,
+    pub const Document = struct {
+        definitions: []Executable.Definition,
         span: Span,
 
-        pub fn isExecutable(self: *const Executable) bool {
+        pub fn isExecutable(self: *const Executable.Document) bool {
             return self.definitions.len > 0 and for (self.definitions) |def| blk: {
                 if (def == .operation) break :blk true;
             } else false;
         }
     };
 
-    /// A type system document
-    pub const TypeSystem = struct {
-        definitions: []TypeSystemDefinitionOrExtension,
-        span: Span,
+    /// An executable definition (operation or fragment)
+    pub const Definition = union(enum) {
+        operation: Operation.Definition,
+        fragment: FragmentDefinition,
     };
 };
 
 /// A definition in a GraphQL document
 pub const Definition = union(enum) {
-    executable: ExecutableDefinition,
-    type_system: TypeSystemDefinitionOrExtension,
-};
-
-/// An executable definition (operation or fragment)
-pub const ExecutableDefinition = union(enum) {
-    operation: OperationDefinition,
-    fragment: FragmentDefinition,
+    executable: Executable.Definition,
+    type_system: TypeSystem.DefinitionOrExtension,
 };
 
 /// A GraphQL operation (query, mutation, or subscription)
 ///
 /// ## References
 /// - [2.3 Operations](https://spec.graphql.org/draft/#sec-Language.Operations)
-pub const OperationDefinition = struct {
-    operation_type: OperationType,
-    name: ?Name,
-    variable_definitions: []VariableDefinition,
-    directives: []Directive,
-    selection_set: Selection.Set,
-    span: Span,
-};
+pub const Operation = struct {
+    pub const Definition = struct {
+        operation_type: Operation.Type,
+        name: ?Name,
+        variable_definitions: []Variable.Definition,
+        directives: []Directive,
+        selection_set: Selection.Set,
+        span: Span,
+    };
 
-/// The type of operation
-pub const OperationType = enum {
-    /// A read-only fetch
-    query,
-    /// A write followed by a fetch
-    mutation,
-    /// A long-lived request that fetches data in response to a sequence of
-    /// events over time
-    subscription,
+    /// The type of operation
+    pub const Type = enum {
+        /// A read-only fetch
+        query,
+        /// A write followed by a fetch
+        mutation,
+        /// A long-lived request that fetches data in response to a sequence of
+        /// events over time
+        subscription,
+    };
 };
 
 /// A selection in a selection set
@@ -135,19 +133,19 @@ pub const FragmentDefinition = struct {
     span: Span,
 };
 
-/// A variable definition
-pub const VariableDefinition = struct {
-    variable: Variable,
-    type: Type,
-    default_value: ?Value,
-    directives: ?[]Directive,
-    span: Span,
-};
-
 /// A variable reference
 pub const Variable = struct {
     name: Name,
     span: Span,
+
+    /// A variable definition
+    pub const Definition = struct {
+        variable: Variable,
+        type: Type,
+        default_value: ?Value,
+        directives: ?[]Directive,
+        span: Span,
+    };
 };
 
 /// A field argument
@@ -295,70 +293,80 @@ pub const Name = struct {
     }
 };
 
-/// Type system definitions and extensions
-pub const TypeSystemDefinitionOrExtension = union(enum) {
-    definition: TypeSystemDefinition,
-    extension: TypeSystemExtension,
-};
-
-/// Type system definitions
-pub const TypeSystemDefinition = union(enum) {
-    schema: SchemaDefinition,
-    scalar: ScalarTypeDefinition,
-    object: ObjectTypeDefinition,
-    interface: InterfaceTypeDefinition,
-    @"union": UnionTypeDefinition,
-    @"enum": EnumTypeDefinition,
-    input_object: InputObjectTypeDefinition,
-    directive: DirectiveDefinition,
-};
-
-/// Type system extensions
-pub const TypeSystemExtension = union(enum) {
-    schema: SchemaExtension,
-    scalar: ScalarTypeExtension,
-    object: ObjectTypeExtension,
-    interface: InterfaceTypeExtension,
-    @"union": UnionTypeExtension,
-    @"enum": EnumTypeExtension,
-    input_object: InputObjectTypeExtension,
-};
-
-/// Schema definition
-pub const SchemaDefinition = struct {
-    description: ?Value.String,
-    directives: ?[]Directive,
-    operation_types: []RootOperationTypeDefinition,
+/// A type system document
+pub const TypeSystem = struct {
+    definitions: []TypeSystem.DefinitionOrExtension,
     span: Span,
+
+    /// Type system definitions and extensions
+    pub const DefinitionOrExtension = union(enum) {
+        definition: TypeSystem.Definition,
+        extension: TypeSystem.Extension,
+    };
+
+    /// Type system definitions
+    pub const Definition = union(enum) {
+        schema: Schema.Definition,
+        scalar: ScalarType.Definition,
+        object: ObjectTypeDefinition,
+        interface: InterfaceTypeDefinition,
+        @"union": UnionTypeDefinition,
+        @"enum": EnumTypeDefinition,
+        input_object: InputObjectTypeDefinition,
+        directive: DirectiveDefinition,
+    };
+
+    /// Type system extensions
+    pub const Extension = union(enum) {
+        schema: Schema.Extension,
+        scalar: ScalarType.Extension,
+        object: ObjectTypeExtension,
+        interface: InterfaceTypeExtension,
+        @"union": UnionTypeExtension,
+        @"enum": EnumTypeExtension,
+        input_object: InputObjectTypeExtension,
+    };
 };
 
-/// Schema extension
-pub const SchemaExtension = struct {
-    directives: ?[]Directive,
-    operation_types: ?[]RootOperationTypeDefinition,
-    span: Span,
+pub const Schema = struct {
+    /// Schema definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        directives: ?[]Directive,
+        operation_types: []RootOperationTypeDefinition,
+        span: Span,
+    };
+
+    /// Schema extension
+    pub const Extension = struct {
+        directives: ?[]Directive,
+        operation_types: ?[]RootOperationTypeDefinition,
+        span: Span,
+    };
 };
 
 /// Root operation type definition
 pub const RootOperationTypeDefinition = struct {
-    operation_type: OperationType,
+    operation_type: Operation.Type,
     type: Type.Named,
     span: Span,
 };
 
-/// Scalar type definition
-pub const ScalarTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    directives: ?[]Directive,
-    span: Span,
-};
+pub const ScalarType = struct {
+    /// Scalar type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        directives: ?[]Directive,
+        span: Span,
+    };
 
-/// Scalar type extension
-pub const ScalarTypeExtension = struct {
-    name: Name,
-    directives: ?[]Directive,
-    span: Span,
+    /// Scalar type extension
+    pub const Extension = struct {
+        name: Name,
+        directives: ?[]Directive,
+        span: Span,
+    };
 };
 
 /// Object type definition
