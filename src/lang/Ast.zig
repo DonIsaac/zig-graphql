@@ -187,6 +187,7 @@ pub const Directive = struct {
         name: Name,
         arguments: ?[]InputValueDefinition,
         repeatable: bool,
+        directives: ?[]Directive,
         locations: []Location,
         span: Span,
 

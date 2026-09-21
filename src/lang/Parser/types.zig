@@ -21,9 +21,9 @@ pub fn parseNamedType(self: *ParserImpl) ParserImpl.Error!Ast.Type.Named {
 /// `[Type]`
 fn parseListType(self: *ParserImpl) ParserImpl.Error!Ast.Type.List {
     const start = self.startSpan();
-    try self.expect(.l_bracket);
+    _ = try self.expect(.l_bracket);
     const ty = try parseType(self);
-    try self.expect(.r_bracket);
+    _ = try self.expect(.r_bracket);
 
     return Ast.Type.List{ .type = ty, .span = self.endSpan(start) };
 }

@@ -21,7 +21,7 @@ pub fn init(proof: *const ParserImpl) Builder {
     };
 
     _ = proof;
-    return .{ ._ = @as(u8, 0) };
+    return .{ ._ = @as(u0, 0) };
 }
 
 // =============================================================================
@@ -71,17 +71,17 @@ pub inline fn list(
 /// - `list_` cannot be freed after calling this function. In some cases, freeing will be a no-op, but in others
 ///   it will invalidate the returned slice's allocation.
 /// - the returned slice can and should be freed after use.
-pub fn intoSlice(self: *const Builder, T: type, list_: *std.ArrayList(T)) []T {
-    const options = self.parser().options;
+pub fn intoSlice(self: *const Builder, T: type, list_: *std.ArrayList(T)) Allocator.Error![]T {
+    const gpa = self.allocator();
 
-    if (options.lossless) {
+    if (self.parser().options.lossless) {
         // fully reclaims unused memory if resizing isnt possible
-        return list_.toOwnedSlice();
+        return list_.toOwnedSlice(gpa);
     }
 
     // attempt to resize the list's buffer in-place. If resizing would require
     // a reallocation + copy, we'll leak the memory
-    _ = list_.allocator.resize(list_.allocatedSlice(), list_.items.len);
+    _ = gpa.resize(list_.allocatedSlice(), list_.items.len);
     return list_.items;
 }
 

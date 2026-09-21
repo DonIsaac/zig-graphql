@@ -1,3 +1,4 @@
+const std = @import("std");
 const util = @import("../../util.zig");
 const ParserImpl = @import("ParserImpl.zig");
 const Ast = @import("../Ast.zig");
@@ -13,8 +14,15 @@ const diagnostics = @import("diagnostics.zig");
 ///         ExecutableDefinition
 ///         TypeSystemDefinitionOrExtensions
 pub fn parseDefinition(p: *ParserImpl) !Ast.Document.Definition {
-    // TODO: type system definition
-    return .{ .executable = try parseExecutableDefinition(p) };
+    return switch (p.cur.kind) {
+        .kw_query,
+        .kw_mutation,
+        .kw_subscription,
+        .kw_fragment,
+        .l_curly,
+        => .{ .executable = try parseExecutableDefinition(p) },
+        else => .{ .type_system = try parseTypeSystemDefinitionOrExtension(p) },
+    };
 }
 
 /// ## [2.2 Document - Executable Definition](https://spec.graphql.org/draft/#sec-Document)
@@ -31,23 +39,26 @@ pub fn parseExecutableDefinition(
         .{ .operation = try parseOperationDefinition(p) };
 }
 
+///     TypeSystemDefinitionOrExtension:
+///         TypeSystemDefinition
+///         TypeSystemExtension
+pub fn parseTypeSystemDefinitionOrExtension(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.DefinitionOrExtension {
+    return if (p.at(.kw_extend)) |_|
+        .{ .extension = try parseTypeSystemExtension(p) }
+    else
+        .{ .definition = try parseTypeSystemDefinition(p) };
+}
+
 ///    OperationDefinition :
 ///        OperationType Name? VariablesDefinition? Directives? SelectionSet
 ///        SelectionSet
 fn parseOperationDefinition(p: *ParserImpl) !Ast.Operation.Definition {
     const start = p.startSpan();
-    if (p.at(.l_bracket)) |_| return p.ast.anonymousOperationDefinition(try parseSelectionSet(p, false));
+    if (p.at(.l_curly)) |_| return p.ast.anonymousOperationDefinition(try parseSelectionSet(p, false));
 
     // TODO: maybe collapse with switch in `parseExecutableDefinition`. depends
     // on tradeoff: perf vs clarity-from-following-grammar-exactly
-    const op: Ast.Operation.Type = switch (p.cur.kind) {
-        .kw_query => .query,
-        .kw_mutation => .mutation,
-        .kw_subscription => .subscription,
-        .l_bracket => unreachable,
-        else => return p.unexpectedToken(),
-    };
-    try p.bump();
+    const op = try parseOperationType(p);
     const name: ?Ast.Name = if (p.at(.name)) |_| try p.parseName() else null;
     const vars: []Ast.Variable.Definition = try parseVariablesDefinition(p);
     const directives: []Ast.Directive = try parseDirectives(p);
@@ -119,11 +130,10 @@ fn parseSelectionSet(
 ) ParserImpl.Error!Ast.Selection.Set {
     const start = p.startSpan();
 
-    if (comptime opt) {
-        _ = try p.eat(.l_curly) orelse return .empty;
-    } else {
+    _ = if (comptime opt)
+        try p.eat(.l_curly) orelse return .empty
+    else
         try p.expect(.l_curly);
-    }
 
     // early check for `{}`
     if (try p.eat(.r_curly)) |_| {
@@ -132,7 +142,7 @@ fn parseSelectionSet(
     }
 
     const selections = try parseSelectionList(p);
-    try p.expect(.r_curly);
+    _ = try p.expect(.r_curly);
     util.debugAssert(selections.len > 0);
     return Ast.Selection.Set{
         .selections = selections,
@@ -151,18 +161,25 @@ fn parseSelection(p: *ParserImpl) !Ast.Selection {
             .l_curly => p.ast.selectionInlineFragmentSelectionOnly(try parseSelectionSet(p, false)),
             .kw_on => blk: {
                 try p.assert(.kw_on);
+                const type_condition: ?Ast.Type.Named = if (p.at(.name)) |_|
+                    try types.parseNamedType(p)
+                else missing: {
+                    @branchHint(.unlikely);
+                    // recover: `... on { ... }` is an inline fragment whose
+                    // type condition never got written.
+                    p.report(diagnostics.typeConditionIsMissingAType(tok));
+                    break :missing null;
+                };
                 const directives = try parseDirectives(p);
-                break :blk if (p.at(.l_curly)) |_|
-                    // this is a selection set where type is 'on'
-                    // at least I think we treat `on` as a type condition?
-                    // break :blk Ast.Selection{ .inline_fragment = p.ast.inlineFragmentSelectionOnly(try parseSelectionSet(p, false)) };
-                    p.ast.selectionInlineFragment(p.ast.namedType(tok), directives, try parseSelectionSet(p, false), p.endSpan(start))
-                else
-                    p.ast.selectionFragmentSpread(p.ast.name(tok), directives, p.endSpan(start));
+                break :blk p.ast.selectionInlineFragment(
+                    type_condition,
+                    directives,
+                    try parseSelectionSet(p, false),
+                    p.endSpan(start),
+                );
             },
             // InlineFragment with no type condition
             .at => blk: {
-                try p.assert(.at);
                 const directives = try parseDirectives(p);
                 const sel = try parseSelectionSet(p, false);
                 break :blk p.ast.selectionInlineFragment(null, directives, sel, p.endSpan(start));
@@ -206,14 +223,13 @@ fn parseField(p: *ParserImpl) !Ast.Selection.Field {
 pub fn parseArguments(p: *ParserImpl, comptime opt: bool, comptime @"const": bool) !Ast.Argument.List {
     const start = p.startSpan();
 
-    if (comptime opt) {
-        _ = try p.eat(.l_paren) orelse return Ast.Argument.List.empty;
-    } else {
+    _ = if (comptime opt)
+        try p.eat(.l_paren) orelse return Ast.Argument.List.empty
+    else
         try p.expect(.l_paren);
-    }
 
     const args = try parseArgumentList(p, @"const");
-    try p.expect(.r_paren);
+    _ = try p.expect(.r_paren);
 
     return Ast.Argument.List{
         .args = args,
@@ -232,7 +248,7 @@ fn parseArgument(p: *ParserImpl, comptime @"const": bool) !Ast.Argument {
     }
 
     const name = try p.parseName();
-    try p.expect(.colon);
+    _ = try p.expect(.colon);
     const value = try p.parseValue(@"const");
 
     return Ast.Argument{
@@ -254,11 +270,77 @@ fn parseArgumentList(p: *ParserImpl, comptime @"const": bool) ![]Ast.Argument {
 }
 
 /// `Directives[Const] : Directive[?Const]+`
-const parseDirectives = ParserImpl.parseListOf(Ast.Directive, parseDirective, &[_]Token.Kind{.at});
+fn DirectiveListParser(comptime @"const": bool) ParserImpl.Fn([]Ast.Directive) {
+    const Wrapper = struct {
+        pub fn parse(p: *ParserImpl) ParserImpl.Error!Ast.Directive {
+            return parseDirective(p, @"const");
+        }
+    };
+    return ParserImpl.parseListOf(Ast.Directive, Wrapper.parse, &[_]Token.Kind{.at});
+}
+
+/// `Directives : Directive+`
+const parseDirectives = DirectiveListParser(false);
+/// `Directives[Const] : Directive[Const]+`
+const parseConstDirectives = DirectiveListParser(true);
+
 /// `Directive[Const] : @ Name Arguments[?Const]?`
-fn parseDirective(p: *ParserImpl) !Ast.Directive {
-    _ = &p;
-    @panic("todo");
+fn parseDirective(p: *ParserImpl, comptime @"const": bool) ParserImpl.Error!Ast.Directive {
+    const start = p.startSpan();
+    try p.assert(.at);
+
+    const name = try p.parseName();
+    const arguments: ?[]Ast.Argument = if (p.at(.l_paren)) |_|
+        (try parseArguments(p, false, @"const")).args
+    else
+        null;
+
+    return Ast.Directive{
+        .name = name,
+        .arguments = arguments,
+        .span = p.endSpan(start),
+    };
+}
+
+/// Spec spellings (`FIELD_DEFINITION`) of each `Location`, whose tags are the
+/// same names in snake case.
+const directive_locations: std.StaticStringMap(Ast.Directive.Definition.Location) = locations: {
+    @setEvalBranchQuota(10_000);
+    const fields = @typeInfo(Ast.Directive.Definition.Location).@"enum".fields;
+    var kvs: [fields.len]struct { []const u8, Ast.Directive.Definition.Location } = undefined;
+    for (&kvs, fields) |*kv, field| {
+        var upper: [field.name.len]u8 = undefined;
+        for (&upper, field.name) |*c, lower| c.* = std.ascii.toUpper(lower);
+        const spelling = upper;
+        kv.* = .{ &spelling, @enumFromInt(field.value) };
+    }
+    break :locations .initComptime(kvs);
+};
+
+///     DirectiveLocations :
+///         `|`? DirectiveLocation
+///         DirectiveLocations `|` DirectiveLocation
+fn parseDirectiveLocations(p: *ParserImpl) ParserImpl.Error![]Ast.Directive.Definition.Location {
+    var locations = try p.ast.list(Ast.Directive.Definition.Location, 1);
+    _ = try p.eat(.pipe); // leading `|` is optional
+
+    while (true) {
+        try locations.append(p.allocator(), try parseDirectiveLocation(p));
+        _ = try p.eat(.pipe) orelse break;
+    }
+
+    return p.ast.intoSlice(Ast.Directive.Definition.Location, &locations);
+}
+
+///     DirectiveLocation : ExecutableDirectiveLocation | TypeSystemDirectiveLocation
+fn parseDirectiveLocation(p: *ParserImpl) ParserImpl.Error!Ast.Directive.Definition.Location {
+    const tok = try p.expectWithoutAdvance(.name);
+    const location = directive_locations.get(p.ast.slice(tok)) orelse {
+        @branchHint(.cold);
+        return p.reportFatal(error.UnexpectedToken, diagnostics.unknownDirectiveLocation(tok));
+    };
+    try p.bump();
+    return location;
 }
 
 /// Parses `VariablesDefinition?`
@@ -267,7 +349,7 @@ fn parseVariablesDefinition(p: *ParserImpl) ![]Ast.Variable.Definition {
     const parseVarDefList = ParserImpl.parseListOf(Ast.Variable.Definition, parseVariableDefinition, &[_]Token.Kind{.dollar});
     _ = try p.eat(.l_paren) orelse return &[_]Ast.Variable.Definition{};
     const vars = try parseVarDefList(p);
-    try p.expect(.r_paren);
+    _ = try p.expect(.r_paren);
     return vars;
 }
 
@@ -276,7 +358,7 @@ fn parseVariablesDefinition(p: *ParserImpl) ![]Ast.Variable.Definition {
 fn parseVariableDefinition(p: *ParserImpl) !Ast.Variable.Definition {
     const start = p.startSpan();
     const variable = try values.parseVariable(p);
-    try p.expect(.colon); // TODO: attempt to recover
+    _ = try p.expect(.colon); // TODO: attempt to recover
 
     const ty = try p.parseType();
     const default_value = if (try p.eat(.equal)) |_| try p.parseValue(true) else null;
@@ -291,7 +373,127 @@ fn parseVariableDefinition(p: *ParserImpl) !Ast.Variable.Definition {
     };
 }
 
-/// `TypeCondition : NamedType`
+/// `TypeCondition : on NamedType`
 fn parseTypeCondition(p: *ParserImpl) !Ast.Type.Named {
+    _ = try p.expect(.kw_on);
     return types.parseNamedType(p);
+}
+
+///     TypeSystemDefinition:
+///         SchemaDefinition
+///         TypeDefinition
+///         DirectiveDefinition
+fn parseTypeSystemDefinition(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.Definition {
+    const start = p.startSpan();
+    const description = try parseDescription(p);
+    switch (p.cur.kind) {
+        .kw_schema => {
+            @panic("todo: SchemaDefinition");
+        },
+        .kw_type => {
+            @panic("todo: TypeDefinition");
+        },
+        // DirectiveDefinition
+        //   Description[opt] `directive` `@` Name ArgumentsDefinition[opt] Directives[Const][opt] `repeatable`[opt] `on` DirectiveLocations
+        .kw_directive => {
+            try p.assert(.kw_directive);
+            _ = try p.expect(.at);
+            const name = try p.parseName();
+            const arguments = if (p.at(.l_paren)) |_| try parseArgumentsDefinition(p) else null;
+            const directives = try parseConstDirectives(p);
+            const repeatable = try p.eat(.kw_repeatable) != null;
+            _ = try p.expect(.kw_on);
+            const locations = try parseDirectiveLocations(p);
+
+            return Ast.TypeSystem.Definition{ .directive = .{
+                .description = description,
+                .name = name,
+                .arguments = arguments,
+                .directives = directives,
+                .repeatable = repeatable,
+                .locations = locations,
+                .span = p.endSpan(start),
+            } };
+        },
+        else => return p.expectedToken("'schema', 'type', or 'directive'"),
+    }
+    @panic("todo");
+}
+
+fn parseTypeSystemExtension(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.Extension {
+    _ = p;
+    @panic("todo: TypeSystemExtension");
+}
+
+///     ArgumentsDefinition
+///         `(` InputValueDefinition[list] `)`
+fn parseArgumentsDefinition(p: *ParserImpl) ParserImpl.Error![]Ast.InputValueDefinition {
+    const start = p.startSpan();
+    _ = try p.expect(.l_paren);
+
+    var definitions = try p.ast.list(Ast.InputValueDefinition, 1);
+    while (try p.eat(.r_paren) == null) {
+        const def = try parseInputValueDefinition(p);
+        try definitions.append(p.allocator(), def);
+        _ = try p.eat(.comma);
+    }
+
+    if (definitions.items.len == 0) {
+        @branchHint(.cold);
+        p.report(diagnostics.listCannotBeEmpty("Argument definitions", p.endSpan(start)));
+    }
+
+    return p.ast.intoSlice(Ast.InputValueDefinition, &definitions);
+}
+
+///     InputValueDefinition
+///         Description[opt] Name `:` Type DefaultValue[opt] Directives[Const][opt]
+fn parseInputValueDefinition(p: *ParserImpl) ParserImpl.Error!Ast.InputValueDefinition {
+    const start = p.startSpan();
+    const description = try parseDescription(p);
+    const name = try p.parseName();
+    _ = try p.expect(.colon);
+    const ty = try p.parseType();
+    const default = if (try p.eat(.equal)) |_| try p.parseValue(true) else null;
+    const directives = try parseConstDirectives(p);
+
+    return Ast.InputValueDefinition{
+        .description = description,
+        .default_value = default,
+        .name = name,
+        .type = ty,
+        .directives = directives,
+        .span = p.endSpan(start),
+    };
+}
+
+fn parseDescription(p: *ParserImpl) !?Ast.Value.String {
+    return switch (p.cur.kind) {
+        .string_value, .block_string_value => try p.parseStringValue(),
+        else => null,
+    };
+}
+
+///     RootOperationTypeDefinition:
+///         OperationType `:` NamedType
+fn parseRootOperationTypeDefinition(p: *ParserImpl) !Ast.Schema.RootOperationTypeDefinition {
+    const start = p.startSpan();
+    const op_type = try parseOperationType(p);
+    try p.expect(.colon);
+    const ty = try types.parseNamedType(p);
+
+    return .{ .operation_type = op_type, .type = ty, .span = p.endSpan(start) };
+}
+
+///     OperationType: one of
+///         `query` `mutation` `subscription`
+fn parseOperationType(p: *ParserImpl) !Ast.Operation.Type {
+    const ty: Ast.Operation.Type = switch (p.cur.kind) {
+        .kw_query => .query,
+        .kw_mutation => .mutation,
+        .kw_subscription => .subscription,
+        else => return p.expectedToken("an operation type"),
+    };
+    try p.bump();
+    return ty;
 }

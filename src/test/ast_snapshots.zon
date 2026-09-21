@@ -150,6 +150,580 @@
         },
         .errors = .{},
     },
+    .{
+        .source =
+        \\query Hero @cached {
+        \\  hero(episode: JEDI) @include(if: true) @skip(if: false) {
+        \\    name @deprecated
+        \\  }
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .executable = .{ .operation = .{
+                    .operation_type = .query,
+                    .name = .{
+                        .value = "Hero",
+                        .pos = .{ .value = 6 },
+                    },
+                    .variable_definitions = .{},
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "cached",
+                                .pos = .{ .value = 12 },
+                            },
+                            .arguments = null,
+                            .span = .{ .start = 11, .end = 18 },
+                        },
+                    },
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .field = .{
+                                .alias = null,
+                                .name = .{
+                                    .value = "hero",
+                                    .pos = .{ .value = 23 },
+                                },
+                                .arguments = .{
+                                    .args = .{
+                                        .{
+                                            .name = .{
+                                                .value = "episode",
+                                                .pos = .{ .value = 28 },
+                                            },
+                                            .value = .{ .@"enum" = .{ .value = .{
+                                                .value = "JEDI",
+                                                .pos = .{ .value = 37 },
+                                            } } },
+                                            .span = .{ .start = 28, .end = 41 },
+                                        },
+                                    },
+                                    .span = .{ .start = 27, .end = 42 },
+                                },
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "include",
+                                            .pos = .{ .value = 44 },
+                                        },
+                                        .arguments = .{
+                                            .{
+                                                .name = .{
+                                                    .value = "if",
+                                                    .pos = .{ .value = 52 },
+                                                },
+                                                .value = .{ .boolean = .{
+                                                    .value = true,
+                                                    .pos = .{ .value = 56 },
+                                                } },
+                                                .span = .{ .start = 52, .end = 60 },
+                                            },
+                                        },
+                                        .span = .{ .start = 43, .end = 61 },
+                                    },
+                                    .{
+                                        .name = .{
+                                            .value = "skip",
+                                            .pos = .{ .value = 63 },
+                                        },
+                                        .arguments = .{
+                                            .{
+                                                .name = .{
+                                                    .value = "if",
+                                                    .pos = .{ .value = 68 },
+                                                },
+                                                .value = .{ .boolean = .{
+                                                    .value = false,
+                                                    .pos = .{ .value = 72 },
+                                                } },
+                                                .span = .{ .start = 68, .end = 77 },
+                                            },
+                                        },
+                                        .span = .{ .start = 62, .end = 78 },
+                                    },
+                                },
+                                .selection_set = .{
+                                    .selections = .{
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "name",
+                                                .pos = .{ .value = 85 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{
+                                                .{
+                                                    .name = .{
+                                                        .value = "deprecated",
+                                                        .pos = .{ .value = 91 },
+                                                    },
+                                                    .arguments = null,
+                                                    .span = .{ .start = 90, .end = 101 },
+                                                },
+                                            },
+                                            .selection_set = .{
+                                                .selections = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .span = .{ .start = 85, .end = 101 },
+                                        } },
+                                    },
+                                    .span = .{ .start = 79, .end = 105 },
+                                },
+                                .span = .{ .start = 23, .end = 105 },
+                            } },
+                        },
+                        .span = .{ .start = 19, .end = 107 },
+                    },
+                    .span = .{ .start = 0, .end = 107 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 107 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\query Friends($withFriends: Boolean!) {
+        \\  ...heroFields @include(if: $withFriends)
+        \\  ... on Droid @skip(if: $withFriends) {
+        \\    primaryFunction
+        \\  }
+        \\  ... @defer {
+        \\    name
+        \\  }
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .executable = .{ .operation = .{
+                    .operation_type = .query,
+                    .name = .{
+                        .value = "Friends",
+                        .pos = .{ .value = 6 },
+                    },
+                    .variable_definitions = .{
+                        .{
+                            .variable = .{
+                                .name = .{
+                                    .value = "withFriends",
+                                    .pos = .{ .value = 15 },
+                                },
+                                .span = .{ .start = 14, .end = 26 },
+                            },
+                            .type = .{ .non_null = .{
+                                .type = .{ .named = .{ .name = .{
+                                    .value = "Boolean",
+                                    .pos = .{ .value = 28 },
+                                } } },
+                                .span = .{ .start = 28, .end = 36 },
+                            } },
+                            .default_value = null,
+                            .directives = null,
+                            .span = .{ .start = 14, .end = 36 },
+                        },
+                    },
+                    .directives = .{},
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .fragment_spread = .{
+                                .name = .{
+                                    .value = "heroFields",
+                                    .pos = .{ .value = 45 },
+                                },
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "include",
+                                            .pos = .{ .value = 57 },
+                                        },
+                                        .arguments = .{
+                                            .{
+                                                .name = .{
+                                                    .value = "if",
+                                                    .pos = .{ .value = 65 },
+                                                },
+                                                .value = .{ .variable = .{
+                                                    .name = .{
+                                                        .value = "withFriends",
+                                                        .pos = .{ .value = 70 },
+                                                    },
+                                                    .span = .{ .start = 69, .end = 81 },
+                                                } },
+                                                .span = .{ .start = 65, .end = 81 },
+                                            },
+                                        },
+                                        .span = .{ .start = 56, .end = 82 },
+                                    },
+                                },
+                                .span = .{ .start = 45, .end = 82 },
+                            } },
+                            .{ .inline_fragment = .{
+                                .type_condition = .{ .name = .{
+                                    .value = "Droid",
+                                    .pos = .{ .value = 92 },
+                                } },
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "skip",
+                                            .pos = .{ .value = 99 },
+                                        },
+                                        .arguments = .{
+                                            .{
+                                                .name = .{
+                                                    .value = "if",
+                                                    .pos = .{ .value = 104 },
+                                                },
+                                                .value = .{ .variable = .{
+                                                    .name = .{
+                                                        .value = "withFriends",
+                                                        .pos = .{ .value = 109 },
+                                                    },
+                                                    .span = .{ .start = 108, .end = 120 },
+                                                } },
+                                                .span = .{ .start = 104, .end = 120 },
+                                            },
+                                        },
+                                        .span = .{ .start = 98, .end = 121 },
+                                    },
+                                },
+                                .selection_set = .{
+                                    .selections = .{
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "primaryFunction",
+                                                .pos = .{ .value = 128 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{},
+                                            .selection_set = .{
+                                                .selections = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .span = .{ .start = 128, .end = 143 },
+                                        } },
+                                    },
+                                    .span = .{ .start = 122, .end = 147 },
+                                },
+                                .span = .{ .start = 89, .end = 147 },
+                            } },
+                            .{ .inline_fragment = .{
+                                .type_condition = null,
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "defer",
+                                            .pos = .{ .value = 155 },
+                                        },
+                                        .arguments = null,
+                                        .span = .{ .start = 154, .end = 160 },
+                                    },
+                                },
+                                .selection_set = .{
+                                    .selections = .{
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "name",
+                                                .pos = .{ .value = 167 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{},
+                                            .selection_set = .{
+                                                .selections = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .span = .{ .start = 167, .end = 171 },
+                                        } },
+                                    },
+                                    .span = .{ .start = 161, .end = 175 },
+                                },
+                                .span = .{ .start = 154, .end = 175 },
+                            } },
+                        },
+                        .span = .{ .start = 38, .end = 177 },
+                    },
+                    .span = .{ .start = 0, .end = 177 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 177 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\fragment heroFields on Character @lowercase {
+        \\  id
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .executable = .{ .fragment = .{
+                    .name = .{
+                        .value = "heroFields",
+                        .pos = .{ .value = 9 },
+                    },
+                    .type_condition = .{ .name = .{
+                        .value = "Character",
+                        .pos = .{ .value = 23 },
+                    } },
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "lowercase",
+                                .pos = .{ .value = 34 },
+                            },
+                            .arguments = null,
+                            .span = .{ .start = 33, .end = 43 },
+                        },
+                    },
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .field = .{
+                                .alias = null,
+                                .name = .{
+                                    .value = "id",
+                                    .pos = .{ .value = 48 },
+                                },
+                                .arguments = .{
+                                    .args = .{},
+                                    .span = .{ .start = 0, .end = 0 },
+                                },
+                                .directives = .{},
+                                .selection_set = .{
+                                    .selections = .{},
+                                    .span = .{ .start = 0, .end = 0 },
+                                },
+                                .span = .{ .start = 48, .end = 50 },
+                            } },
+                        },
+                        .span = .{ .start = 44, .end = 52 },
+                    },
+                    .span = .{ .start = 0, .end = 52 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 52 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\"""
+        \\Marks an element of a GraphQL schema as no longer supported.
+        \\"""
+        \\directive @deprecated(
+        \\  "Why this element was deprecated."
+        \\  reason: String = "No longer supported"
+        \\) on FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM_VALUE | INPUT_FIELD_DEFINITION
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .directive = .{
+                    .description = .{
+                        .value = "\"\"\"\nMarks an element of a GraphQL schema as no longer supported.\n\"\"\"",
+                        .block = true,
+                        .span = .{ .start = 0, .end = 68 },
+                    },
+                    .name = .{
+                        .value = "deprecated",
+                        .pos = .{ .value = 80 },
+                    },
+                    .arguments = .{
+                        .{
+                            .description = .{
+                                .value = "\"Why this element was deprecated.\"",
+                                .block = false,
+                                .span = .{ .start = 94, .end = 128 },
+                            },
+                            .name = .{
+                                .value = "reason",
+                                .pos = .{ .value = 131 },
+                            },
+                            .type = .{ .named = .{ .name = .{
+                                .value = "String",
+                                .pos = .{ .value = 139 },
+                            } } },
+                            .default_value = .{ .string = .{
+                                .value = "\"No longer supported\"",
+                                .block = false,
+                                .span = .{ .start = 148, .end = 169 },
+                            } },
+                            .directives = .{},
+                            .span = .{ .start = 94, .end = 169 },
+                        },
+                    },
+                    .repeatable = false,
+                    .directives = .{},
+                    .locations = .{
+                        .field_definition,
+                        .argument_definition,
+                        .enum_value,
+                        .input_field_definition,
+                    },
+                    .span = .{ .start = 0, .end = 251 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 251 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\directive @tag(name: String!) repeatable on
+        \\  | FIELD
+        \\  | OBJECT
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .directive = .{
+                    .description = null,
+                    .name = .{
+                        .value = "tag",
+                        .pos = .{ .value = 11 },
+                    },
+                    .arguments = .{
+                        .{
+                            .description = null,
+                            .name = .{
+                                .value = "name",
+                                .pos = .{ .value = 15 },
+                            },
+                            .type = .{ .non_null = .{
+                                .type = .{ .named = .{ .name = .{
+                                    .value = "String",
+                                    .pos = .{ .value = 21 },
+                                } } },
+                                .span = .{ .start = 21, .end = 28 },
+                            } },
+                            .default_value = null,
+                            .directives = .{},
+                            .span = .{ .start = 15, .end = 28 },
+                        },
+                    },
+                    .repeatable = true,
+                    .directives = .{},
+                    .locations = .{
+                        .field,
+                        .object,
+                    },
+                    .span = .{ .start = 0, .end = 64 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 64 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\directive @lowercase on FIELD
+        \\
+        \\query Hero {
+        \\  ...heroFields
+        \\}
+        \\
+        \\fragment heroFields on Character {
+        \\  name @lowercase
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .directive = .{
+                    .description = null,
+                    .name = .{
+                        .value = "lowercase",
+                        .pos = .{ .value = 11 },
+                    },
+                    .arguments = null,
+                    .repeatable = false,
+                    .directives = .{},
+                    .locations = .{
+                        .field,
+                    },
+                    .span = .{ .start = 0, .end = 29 },
+                } } } },
+                .{ .executable = .{ .operation = .{
+                    .operation_type = .query,
+                    .name = .{
+                        .value = "Hero",
+                        .pos = .{ .value = 37 },
+                    },
+                    .variable_definitions = .{},
+                    .directives = .{},
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .fragment_spread = .{
+                                .name = .{
+                                    .value = "heroFields",
+                                    .pos = .{ .value = 49 },
+                                },
+                                .directives = .{},
+                                .span = .{ .start = 49, .end = 59 },
+                            } },
+                        },
+                        .span = .{ .start = 42, .end = 61 },
+                    },
+                    .span = .{ .start = 31, .end = 61 },
+                } } },
+                .{ .executable = .{ .fragment = .{
+                    .name = .{
+                        .value = "heroFields",
+                        .pos = .{ .value = 72 },
+                    },
+                    .type_condition = .{ .name = .{
+                        .value = "Character",
+                        .pos = .{ .value = 86 },
+                    } },
+                    .directives = .{},
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .field = .{
+                                .alias = null,
+                                .name = .{
+                                    .value = "name",
+                                    .pos = .{ .value = 100 },
+                                },
+                                .arguments = .{
+                                    .args = .{},
+                                    .span = .{ .start = 0, .end = 0 },
+                                },
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "lowercase",
+                                            .pos = .{ .value = 106 },
+                                        },
+                                        .arguments = null,
+                                        .span = .{ .start = 105, .end = 115 },
+                                    },
+                                },
+                                .selection_set = .{
+                                    .selections = .{},
+                                    .span = .{ .start = 0, .end = 0 },
+                                },
+                                .span = .{ .start = 100, .end = 115 },
+                            } },
+                        },
+                        .span = .{ .start = 96, .end = 117 },
+                    },
+                    .span = .{ .start = 63, .end = 117 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 117 },
+        },
+        .errors = .{},
+    },
     // .{
     //     // https://spec.graphql.org/draft/#example-916f4
     //     .source =

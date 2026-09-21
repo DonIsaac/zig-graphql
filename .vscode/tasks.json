@@ -8,7 +8,6 @@
             "command": "zig",
             "args": [
                 "build",
-                "--prominent-compile-errors"
             ],
             "group": {
                 "kind": "build",
@@ -30,7 +29,6 @@
             "command": "zig",
             "args": [
                 "build",
-                "--prominent-compile-errors",
                 "--watch"
             ],
             "group": "build",

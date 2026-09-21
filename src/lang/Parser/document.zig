@@ -7,11 +7,13 @@ const definitions = @import("definitions.zig");
 /// `Document : Definition+`
 /// `ExecutableDocument : ExecutableDefinition+`
 pub fn parseDocument(p: *ParserImpl, comptime executable_only: bool) !Ast.Document {
-    // p.bump();
     const start = p.startSpan();
     var defs = try p.ast.list(Ast.Document.Definition, 1);
-    while (try p.nextToken()) |t| {
-        util.debugAssert(t.eql(p.cur));
+
+    // prime `p.cur` with the first token. Every definition parser leaves it on
+    // the first token of the *next* definition, so the loop must not advance.
+    _ = try p.nextToken();
+    while (!p.atEof()) {
         const def: Ast.Document.Definition = if (comptime executable_only)
             .{ .executable = try definitions.parseExecutableDefinition(p) }
         else
@@ -20,7 +22,6 @@ pub fn parseDocument(p: *ParserImpl, comptime executable_only: bool) !Ast.Docume
     }
 
     const span = p.endSpan(start);
-    _ = p.ast.allocator().resize(defs.allocatedSlice(), defs.items.len);
     // TODO: report empty defs
-    return Ast.Document{ .definitions = defs.items, .span = span };
+    return Ast.Document{ .definitions = try p.ast.intoSlice(Ast.Document.Definition, &defs), .span = span };
 }
