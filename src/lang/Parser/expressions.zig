@@ -1,14 +1,24 @@
+const std = @import("std");
 const Ast = @import("../Ast.zig");
 const ParserImpl = @import("./ParserImpl.zig");
 const Token = @import("../Lexer.zig").Token;
 
+/// `Name : [_A-Za-z][_0-9A-Za-z]*`
+///
+/// Keywords are lexed apart from names to make parsing easier, but the spec has
+/// no keywords: `type`, `input`, and friends are ordinary names wherever a name
+/// is what's expected.
 pub fn parseName(self: *ParserImpl) !Ast.Name {
-    const start = self.startSpan();
-    _ = try self.expect(.name); // TODO: some keywords can be valid names given the context
-    const span = self.endSpan(start);
+    const tok = self.cur;
+    if (!tok.kind.isName()) {
+        @branchHint(.unlikely);
+        return self.expectedToken("a name");
+    }
+    try self.bump();
+
     return Ast.Name{
-        .value = span.slice(self.lexer.source()),
-        .pos = span.offset(.Start),
+        .value = tok.span.slice(self.lexer.source()),
+        .pos = tok.span.offset(.Start),
     };
 }
 
@@ -17,10 +27,14 @@ pub fn parseListOf(
     comptime Fn: ParserImpl.Fn(Node),
     comptime first_token: []const Token.Kind,
 ) ParserImpl.Fn([]Node) {
+    // a list that starts at a name starts at a keyword too, since keywords are
+    // spelled like names
+    const names_start_a_node = comptime std.mem.indexOfScalar(Token.Kind, first_token, .name) != null;
+
     return struct {
         pub fn parseList(p: *ParserImpl) ![]Node {
             var nodes = try p.ast.list(Node, 1);
-            while (p.atAny(first_token)) {
+            while (p.atAny(first_token) or (names_start_a_node and p.cur.kind.isName())) {
                 const node = try Fn(p);
                 try nodes.append(p.allocator(), node);
                 _ = try p.eat(.comma);

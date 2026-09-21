@@ -59,7 +59,7 @@ fn parseOperationDefinition(p: *ParserImpl) !Ast.Operation.Definition {
     // TODO: maybe collapse with switch in `parseExecutableDefinition`. depends
     // on tradeoff: perf vs clarity-from-following-grammar-exactly
     const op = try parseOperationType(p);
-    const name: ?Ast.Name = if (p.at(.name)) |_| try p.parseName() else null;
+    const name: ?Ast.Name = if (p.cur.kind.isName()) try p.parseName() else null;
     const vars: []Ast.Variable.Definition = try parseVariablesDefinition(p);
     const directives: []Ast.Directive = try parseDirectives(p);
     const selection_set: Ast.Selection.Set = try parseSelectionSet(p, true);
@@ -385,9 +385,13 @@ fn parseTypeSystemDefinition(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.Def
     const description = try parseDescription(p);
     switch (p.cur.kind) {
         .kw_schema => return .{ .schema = try parseSchemaDefinition(p, description, start) },
-        .kw_type => {
-            @panic("todo: TypeDefinition");
-        },
+        .kw_scalar,
+        .kw_type,
+        .kw_interface,
+        .kw_union,
+        .kw_enum,
+        .kw_input,
+        => return parseTypeDefinition(p, description, start),
         // DirectiveDefinition
         //   Description[opt] `directive` `@` Name ArgumentsDefinition[opt] Directives[Const][opt] `repeatable`[opt] `on` DirectiveLocations
         .kw_directive => {
@@ -410,7 +414,7 @@ fn parseTypeSystemDefinition(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.Def
                 .span = p.endSpan(start),
             } };
         },
-        else => return p.expectedToken("'schema', 'type', or 'directive'"),
+        else => return p.expectedToken("a schema, type, or directive definition"),
     }
     @panic("todo");
 }
@@ -450,6 +454,284 @@ fn parseSchemaDefinition(
         .span = p.endSpan(start),
     };
 }
+
+///     TypeDefinition :
+///         ScalarTypeDefinition
+///         ObjectTypeDefinition
+///         InterfaceTypeDefinition
+///         UnionTypeDefinition
+///         EnumTypeDefinition
+///         InputObjectTypeDefinition
+///
+/// `description` and `start` come from `parseTypeSystemDefinition`, which has
+/// already consumed the description this definition's span starts at.
+fn parseTypeDefinition(
+    p: *ParserImpl,
+    description: ?Ast.Value.String,
+    start: u32,
+) ParserImpl.Error!Ast.TypeSystem.Definition {
+    return switch (p.cur.kind) {
+        .kw_scalar => .{ .scalar = try parseScalarTypeDefinition(p, description, start) },
+        .kw_type => .{ .object = try parseObjectTypeDefinition(p, description, start) },
+        .kw_interface => .{ .interface = try parseInterfaceTypeDefinition(p, description, start) },
+        .kw_union => .{ .@"union" = try parseUnionTypeDefinition(p, description, start) },
+        .kw_enum => .{ .@"enum" = try parseEnumTypeDefinition(p, description, start) },
+        .kw_input => .{ .input_object = try parseInputObjectTypeDefinition(p, description, start) },
+        else => p.expectedToken("a type definition"),
+    };
+}
+
+///     ScalarTypeDefinition : Description? `scalar` Name Directives[Const]?
+fn parseScalarTypeDefinition(
+    p: *ParserImpl,
+    description: ?Ast.Value.String,
+    start: u32,
+) ParserImpl.Error!Ast.ScalarType.Definition {
+    try p.assert(.kw_scalar);
+
+    const name = try p.parseName();
+    const directives = try parseConstDirectives(p);
+
+    return Ast.ScalarType.Definition{
+        .description = description,
+        .name = name,
+        .directives = directives,
+        .span = p.endSpan(start),
+    };
+}
+
+///     ObjectTypeDefinition :
+///         Description? `type` Name ImplementsInterfaces? Directives[Const]? FieldsDefinition?
+fn parseObjectTypeDefinition(
+    p: *ParserImpl,
+    description: ?Ast.Value.String,
+    start: u32,
+) ParserImpl.Error!Ast.ObjectType.Definition {
+    try p.assert(.kw_type);
+
+    const name = try p.parseName();
+    const interfaces = try parseImplementsInterfaces(p);
+    const directives = try parseConstDirectives(p);
+    const fields = if (p.at(.l_curly)) |_| try parseFieldsDefinition(p) else null;
+
+    return Ast.ObjectType.Definition{
+        .description = description,
+        .name = name,
+        .interfaces = interfaces,
+        .directives = directives,
+        .fields = fields,
+        .span = p.endSpan(start),
+    };
+}
+
+///     InterfaceTypeDefinition :
+///         Description? `interface` Name ImplementsInterfaces? Directives[Const]? FieldsDefinition?
+fn parseInterfaceTypeDefinition(
+    p: *ParserImpl,
+    description: ?Ast.Value.String,
+    start: u32,
+) ParserImpl.Error!Ast.InterfaceType.Definition {
+    try p.assert(.kw_interface);
+
+    const name = try p.parseName();
+    const interfaces = try parseImplementsInterfaces(p);
+    const directives = try parseConstDirectives(p);
+    const fields = if (p.at(.l_curly)) |_| try parseFieldsDefinition(p) else null;
+
+    return Ast.InterfaceType.Definition{
+        .description = description,
+        .name = name,
+        .interfaces = interfaces,
+        .directives = directives,
+        .fields = fields,
+        .span = p.endSpan(start),
+    };
+}
+
+///     UnionTypeDefinition :
+///         Description? `union` Name Directives[Const]? UnionMemberTypes?
+fn parseUnionTypeDefinition(
+    p: *ParserImpl,
+    description: ?Ast.Value.String,
+    start: u32,
+) ParserImpl.Error!Ast.UnionType.Definition {
+    try p.assert(.kw_union);
+
+    const name = try p.parseName();
+    const directives = try parseConstDirectives(p);
+    const member_types = try parseUnionMemberTypes(p);
+
+    return Ast.UnionType.Definition{
+        .description = description,
+        .name = name,
+        .directives = directives,
+        .types = member_types,
+        .span = p.endSpan(start),
+    };
+}
+
+///     EnumTypeDefinition :
+///         Description? `enum` Name Directives[Const]? EnumValuesDefinition?
+fn parseEnumTypeDefinition(
+    p: *ParserImpl,
+    description: ?Ast.Value.String,
+    start: u32,
+) ParserImpl.Error!Ast.EnumType.Definition {
+    try p.assert(.kw_enum);
+
+    const name = try p.parseName();
+    const directives = try parseConstDirectives(p);
+    const enum_values = if (p.at(.l_curly)) |_| try parseEnumValuesDefinition(p) else null;
+
+    return Ast.EnumType.Definition{
+        .description = description,
+        .name = name,
+        .directives = directives,
+        .values = enum_values,
+        .span = p.endSpan(start),
+    };
+}
+
+///     InputObjectTypeDefinition :
+///         Description? `input` Name Directives[Const]? InputFieldsDefinition?
+fn parseInputObjectTypeDefinition(
+    p: *ParserImpl,
+    description: ?Ast.Value.String,
+    start: u32,
+) ParserImpl.Error!Ast.InputObjectType.Definition {
+    try p.assert(.kw_input);
+
+    const name = try p.parseName();
+    const directives = try parseConstDirectives(p);
+    const fields = if (p.at(.l_curly)) |_| try parseInputFieldsDefinition(p) else null;
+
+    return Ast.InputObjectType.Definition{
+        .description = description,
+        .name = name,
+        .directives = directives,
+        .fields = fields,
+        .span = p.endSpan(start),
+    };
+}
+
+///     ImplementsInterfaces :
+///         `implements` `&`? NamedType
+///         ImplementsInterfaces `&` NamedType
+fn parseImplementsInterfaces(p: *ParserImpl) ParserImpl.Error!?[]Ast.Type.Named {
+    _ = try p.eat(.kw_implements) orelse return null;
+    return try parseNamedTypeList(p, .amp);
+}
+
+///     UnionMemberTypes :
+///         `=` `|`? NamedType
+///         UnionMemberTypes `|` NamedType
+fn parseUnionMemberTypes(p: *ParserImpl) ParserImpl.Error!?[]Ast.Type.Named {
+    _ = try p.eat(.equal) orelse return null;
+    return try parseNamedTypeList(p, .pipe);
+}
+
+/// A `separator`-delimited list of named types. A leading separator is allowed.
+fn parseNamedTypeList(p: *ParserImpl, comptime separator: Token.Kind) ParserImpl.Error![]Ast.Type.Named {
+    var named_types = try p.ast.list(Ast.Type.Named, 1);
+    _ = try p.eat(separator);
+
+    while (true) {
+        try named_types.append(p.allocator(), try types.parseNamedType(p));
+        _ = try p.eat(separator) orelse break;
+    }
+
+    return p.ast.intoSlice(Ast.Type.Named, &named_types);
+}
+
+/// Parses `{` Node+ `}`, the shape shared by `FieldsDefinition`,
+/// `EnumValuesDefinition`, and `InputFieldsDefinition`.
+fn BracedListParser(
+    comptime Node: type,
+    comptime parseNode: ParserImpl.Fn(Node),
+    /// what the list holds, for the "must have at least one item" diagnostic
+    comptime name_plural: []const u8,
+) ParserImpl.Fn([]Node) {
+    return struct {
+        pub fn parseBracedList(p: *ParserImpl) ParserImpl.Error![]Node {
+            const start = p.startSpan();
+            _ = try p.expect(.l_curly);
+
+            var nodes = try p.ast.list(Node, 4);
+            while (try p.eat(.r_curly) == null) {
+                const node = try parseNode(p);
+                try nodes.append(p.allocator(), node);
+                _ = try p.eat(.comma);
+            }
+
+            if (nodes.items.len == 0) {
+                p.report(diagnostics.listCannotBeEmpty(name_plural, p.endSpan(start)));
+            }
+
+            return p.ast.intoSlice(Node, &nodes);
+        }
+    }.parseBracedList;
+}
+
+///     FieldsDefinition : `{` FieldDefinition+ `}`
+const parseFieldsDefinition = BracedListParser(Ast.FieldDefinition, parseFieldDefinition, "Field definitions");
+
+///     FieldDefinition :
+///         Description? Name ArgumentsDefinition? `:` Type Directives[Const]?
+fn parseFieldDefinition(p: *ParserImpl) ParserImpl.Error!Ast.FieldDefinition {
+    const start = p.startSpan();
+
+    const description = try parseDescription(p);
+    const name = try p.parseName();
+    const arguments = if (p.at(.l_paren)) |_| try parseArgumentsDefinition(p) else null;
+    _ = try p.expect(.colon);
+    const ty = try p.parseType();
+    const directives = try parseConstDirectives(p);
+
+    return Ast.FieldDefinition{
+        .description = description,
+        .name = name,
+        .arguments = arguments,
+        .type = ty,
+        .directives = directives,
+        .span = p.endSpan(start),
+    };
+}
+
+///     EnumValuesDefinition : `{` EnumValueDefinition+ `}`
+const parseEnumValuesDefinition = BracedListParser(Ast.EnumValueDefinition, parseEnumValueDefinition, "Enum values");
+
+///     EnumValueDefinition : Description? EnumValue Directives[Const]?
+fn parseEnumValueDefinition(p: *ParserImpl) ParserImpl.Error!Ast.EnumValueDefinition {
+    const start = p.startSpan();
+
+    const description = try parseDescription(p);
+    const value = try parseEnumValue(p);
+    const directives = try parseConstDirectives(p);
+
+    return Ast.EnumValueDefinition{
+        .description = description,
+        .value = value,
+        .directives = directives,
+        .span = p.endSpan(start),
+    };
+}
+
+///     EnumValue : Name but not `true`, `false` or `null`
+fn parseEnumValue(p: *ParserImpl) ParserImpl.Error!Ast.Value.Enum {
+    switch (p.cur.kind) {
+        .kw_true, .kw_false, .kw_null => {
+            // recover: take the reserved word as the value's name
+            const tok = p.cur;
+            p.report(diagnostics.enumValueCannotBeReserved(tok));
+            try p.bump();
+            return Ast.Value.Enum{ .value = p.ast.name(tok) };
+        },
+        else => return Ast.Value.Enum{ .value = try p.parseName() },
+    }
+}
+
+///     InputFieldsDefinition : `{` InputValueDefinition+ `}`
+const parseInputFieldsDefinition = BracedListParser(Ast.InputValueDefinition, parseInputValueDefinition, "Input field definitions");
 
 fn parseTypeSystemExtension(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.Extension {
     _ = p;

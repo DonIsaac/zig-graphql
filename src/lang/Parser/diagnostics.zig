@@ -33,6 +33,19 @@ pub fn unknownDirectiveLocation(tok: Token) Diagnostic {
     };
 }
 
+/// `Enum values cannot be named 'true', 'false', or 'null'`
+pub fn enumValueCannotBeReserved(tok: Token) Diagnostic {
+    @branchHint(.cold);
+    util.debugAssert(switch (tok.kind) {
+        .kw_true, .kw_false, .kw_null => true,
+        else => false,
+    });
+    return Diagnostic{
+        .message = "Enum values cannot be named 'true', 'false', or 'null'",
+        .span = tok.span,
+    };
+}
+
 pub inline fn variableInConstValueContext(span: Span) Diagnostic {
     @branchHint(.cold);
     return Diagnostic{

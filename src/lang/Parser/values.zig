@@ -36,11 +36,12 @@ pub fn parseValue(p: *ParserImpl, comptime is_const: bool) ParserImpl.Error!Ast.
             try p.bump();
             break :blk Value{ .int = .{ .value = p.ast.slice(tok), .span = tok.span } };
         },
-        .name => blk: {
+        // EnumValue : Name but not `true`, `false` or `null`, each of which is
+        // matched above
+        else => if (tok.kind.isName()) blk: {
             try p.bump();
             break :blk Value{ .@"enum" = .{ .value = p.ast.name(tok) } };
-        },
-        else => p.unexpectedToken(),
+        } else p.unexpectedToken(),
     };
 }
 
