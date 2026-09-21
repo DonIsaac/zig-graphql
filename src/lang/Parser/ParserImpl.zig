@@ -46,7 +46,7 @@ pub const Error = error{
     // UnexpectedByte,
 } || Lexer.Error || Allocator.Error;
 
-pub fn ParserFn(T: type) type {
+pub fn Fn(T: type) type {
     return fn (p: *ParserImpl) ParserImpl.Error!T;
 }
 
@@ -64,6 +64,7 @@ pub fn init(allocator_: Allocator, source_: []const u8) ParserImpl {
     p.ast = .init(&p);
     return p;
 }
+
 pub fn deinit(self: *ParserImpl) void {
     self.lexer.deinit();
     self.comments.deinit(self.lexer._impl.allocator);
@@ -94,17 +95,15 @@ pub fn eat(self: *ParserImpl, comptime expected: Token.Kind) Error!?Token {
 }
 
 /// Ensures the current token matches `expected` and advances to the next token.
-pub inline fn expect(self: *ParserImpl, comptime expected: Lexer.Token.Kind) !void {
-    try self.expectWithoutAdvance(expected);
+pub inline fn expect(self: *ParserImpl, comptime expected: Lexer.Token.Kind) Error!Token {
+    const tok = try self.expectWithoutAdvance(expected);
     try self.bump();
+    return tok;
 }
 
 /// Errors if current token is not `expected`. Does not advance the current token.
-pub fn expectWithoutAdvance(self: *ParserImpl, comptime expected: Token.Kind) !void {
-    _ = self.at(expected) orelse {
-        @branchHint(.cold);
-        return self.expectedToken(@tagName(expected));
-    };
+pub fn expectWithoutAdvance(self: *ParserImpl, comptime expected: Token.Kind) !Token {
+    return self.at(expected) orelse self.expectedToken(@tagName(expected));
 }
 
 /// Consumes the current token, invoking Illegal Behavior if it
@@ -130,7 +129,6 @@ pub inline fn assert(self: *ParserImpl, comptime expected: Lexer.Token.Kind) !vo
 pub inline fn assertWithoutAdvance(self: *ParserImpl, comptime expected: Lexer.Token.Kind) void {
     if (comptime !util.assert_enabled) return;
     if (self.at(expected) == null) {
-        @branchHint(.cold);
         std.debug.panic(
             "Assertion failed: unexpected current token at offset {d}.\n\tExpected: {s}\n\tGot: {s}\n",
             .{ self.cur.span.start, @tagName(expected), @tagName(self.cur.kind) },
@@ -142,7 +140,6 @@ pub inline fn assertWithoutAdvance(self: *ParserImpl, comptime expected: Lexer.T
 pub inline fn assertNotWithoutAdvance(self: *ParserImpl, comptime unexpected: Lexer.Token.Kind) void {
     if (comptime !util.assert_enabled) return;
     if (self.at(unexpected)) |tok| {
-        @branchHint(.cold);
         std.debug.panic(
             "Assertion failed: Expected {any} token to have already been consumed.",
             .{tok},
@@ -172,7 +169,11 @@ pub inline fn atAny(
     } else return false;
 }
 
-/// Consume the next token. Current token is updated. Returns the new, now current, token.
+/// Consume the next token. Current token is updated. Returns the new, now
+/// current, token, or `null` once the source has been exhausted.
+///
+/// The current token becomes `.eof` when this returns `null`, so `at`,
+/// `expect`, and friends never see a stale token past the end of the source.
 pub fn nextToken(self: *ParserImpl) !?Lexer.Token {
     self.prev_tok_end = self.cur.span.end;
 
@@ -186,6 +187,7 @@ pub fn nextToken(self: *ParserImpl) !?Lexer.Token {
         while (true) {
             const next_tok = try self.lexer.next() orelse {
                 @branchHint(.unlikely);
+                self.cur = self.eofToken();
                 return null;
             };
             switch (next_tok.kind) {
@@ -200,6 +202,17 @@ pub fn nextToken(self: *ParserImpl) !?Lexer.Token {
     };
     self.cur = tok;
     return tok;
+}
+
+/// Returns `true` once every token in the source has been consumed.
+pub inline fn atEof(self: *const ParserImpl) bool {
+    return self.at(.eof) != null;
+}
+
+/// A zero-width token sitting at the end of the source.
+fn eofToken(self: *const ParserImpl) Token {
+    const end: u32 = @intCast(self.source().len);
+    return .{ .kind = .eof, .span = .{ .start = end, .end = end } };
 }
 
 pub inline fn startSpan(self: *const ParserImpl) u32 {
@@ -225,6 +238,7 @@ pub inline fn allocator(self: *const ParserImpl) Allocator {
 pub const parseName = expressions.parseName;
 pub const parseType = types.parseType;
 pub const parseValue = values.parseValue;
+pub const parseStringValue = values.parseStringValue;
 pub const parseListOf = expressions.parseListOf;
 
 // =============================================================================

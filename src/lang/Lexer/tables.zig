@@ -23,8 +23,8 @@ pub const ASCII_TABLE: [128]ByteHandler = [_]ByteHandler{
     DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LTH, EQU, GTH, QUE, // 3
     AT_, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, // 4
     LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LET, LBR, BSL, RBR, CRT, USC, // 5
-    BTK, LET, LET, LET, LET, L_e, L_f, LET, LET, LET, LET, LET, LET, L_m, L_n, L_o, // 6
-    LET, L_q, LET, L_s, L_t, LET, L_u, LET, LET, LET, LET, LCB, PIP, RCB, TLD, ERR, // 7
+    BTK, LET, LET, LET, L_d, L_e, L_f, LET, LET, L_i, LET, LET, LET, L_m, L_n, L_o, // 6
+    LET, L_q, L_r, L_s, L_t, L_u, LET, LET, LET, LET, LET, LCB, PIP, RCB, TLD, ERR, // 7
 };
 // zig-fmt: on
 
@@ -177,6 +177,11 @@ fn DOT(lexer: *LexerImpl, _: u8) Token.Kind {
             // We have a fractional part without an integer part (e.g., .5)
             return lexFractionalPart(lexer);
         }
+        // `...`
+        if (c == '.' and lexer.peek() == '.') {
+            lexer.advanceBy(2);
+            return .spread;
+        }
     }
     return .period;
 }
@@ -291,12 +296,24 @@ fn TLD(lexer: *LexerImpl, _: u8) Token.Kind {
 
 // ============================== LETTERS & DIGITS ==============================
 
+/// Lowercase d
+const L_d: ByteHandler = keywordOrName('d', &[_]struct { []const u8, Token.Kind }{
+    .{ "irective", .kw_directive },
+});
+
 /// Lowercase e
 const L_e: ByteHandler = keywordOrName('e', &[_]struct { []const u8, Token.Kind }{ .{ "num", .kw_enum }, .{ "xtend", .kw_extend } });
 
 const L_f: ByteHandler = keywordOrName('f', &[_]struct { []const u8, Token.Kind }{
     .{ "alse", .kw_false },
     .{ "ragment", .kw_fragment },
+});
+
+/// Lowercase i
+const L_i: ByteHandler = keywordOrName('i', &[_]struct { []const u8, Token.Kind }{
+    .{ "mplements", .kw_implements },
+    .{ "nput", .kw_input },
+    .{ "nterface", .kw_interface },
 });
 
 /// Lowercase m
@@ -308,18 +325,19 @@ const L_n: ByteHandler = keywordOrName('n', &[_]struct { []const u8, Token.Kind 
     .{ "ull", .kw_null },
 });
 
-// const L_o
-fn L_o(lexer: *LexerImpl, c: u8) Token.Kind {
-    if (lexer.peek() == 'n') {
-        lexer.advanceBy(2);
-        return .kw_on;
-    }
-    return LET(lexer, c);
-}
+/// Lowercase o
+const L_o: ByteHandler = keywordOrName('o', &[_]struct { []const u8, Token.Kind }{
+    .{ "n", .kw_on },
+});
 
 /// Lowercase q
 const L_q: ByteHandler = keywordOrName('q', &[_]struct { []const u8, Token.Kind }{
     .{ "uery", .kw_query },
+});
+
+/// Lowercase r
+const L_r: ByteHandler = keywordOrName('r', &[_]struct { []const u8, Token.Kind }{
+    .{ "epeatable", .kw_repeatable },
 });
 
 /// Lowercase s

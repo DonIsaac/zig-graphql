@@ -150,6 +150,1093 @@
         },
         .errors = .{},
     },
+    .{
+        .source =
+        \\query Hero @cached {
+        \\  hero(episode: JEDI) @include(if: true) @skip(if: false) {
+        \\    name @deprecated
+        \\  }
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .executable = .{ .operation = .{
+                    .operation_type = .query,
+                    .name = .{
+                        .value = "Hero",
+                        .pos = .{ .value = 6 },
+                    },
+                    .variable_definitions = .{},
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "cached",
+                                .pos = .{ .value = 12 },
+                            },
+                            .arguments = null,
+                            .span = .{ .start = 11, .end = 18 },
+                        },
+                    },
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .field = .{
+                                .alias = null,
+                                .name = .{
+                                    .value = "hero",
+                                    .pos = .{ .value = 23 },
+                                },
+                                .arguments = .{
+                                    .args = .{
+                                        .{
+                                            .name = .{
+                                                .value = "episode",
+                                                .pos = .{ .value = 28 },
+                                            },
+                                            .value = .{ .@"enum" = .{ .value = .{
+                                                .value = "JEDI",
+                                                .pos = .{ .value = 37 },
+                                            } } },
+                                            .span = .{ .start = 28, .end = 41 },
+                                        },
+                                    },
+                                    .span = .{ .start = 27, .end = 42 },
+                                },
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "include",
+                                            .pos = .{ .value = 44 },
+                                        },
+                                        .arguments = .{
+                                            .{
+                                                .name = .{
+                                                    .value = "if",
+                                                    .pos = .{ .value = 52 },
+                                                },
+                                                .value = .{ .boolean = .{
+                                                    .value = true,
+                                                    .pos = .{ .value = 56 },
+                                                } },
+                                                .span = .{ .start = 52, .end = 60 },
+                                            },
+                                        },
+                                        .span = .{ .start = 43, .end = 61 },
+                                    },
+                                    .{
+                                        .name = .{
+                                            .value = "skip",
+                                            .pos = .{ .value = 63 },
+                                        },
+                                        .arguments = .{
+                                            .{
+                                                .name = .{
+                                                    .value = "if",
+                                                    .pos = .{ .value = 68 },
+                                                },
+                                                .value = .{ .boolean = .{
+                                                    .value = false,
+                                                    .pos = .{ .value = 72 },
+                                                } },
+                                                .span = .{ .start = 68, .end = 77 },
+                                            },
+                                        },
+                                        .span = .{ .start = 62, .end = 78 },
+                                    },
+                                },
+                                .selection_set = .{
+                                    .selections = .{
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "name",
+                                                .pos = .{ .value = 85 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{
+                                                .{
+                                                    .name = .{
+                                                        .value = "deprecated",
+                                                        .pos = .{ .value = 91 },
+                                                    },
+                                                    .arguments = null,
+                                                    .span = .{ .start = 90, .end = 101 },
+                                                },
+                                            },
+                                            .selection_set = .{
+                                                .selections = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .span = .{ .start = 85, .end = 101 },
+                                        } },
+                                    },
+                                    .span = .{ .start = 79, .end = 105 },
+                                },
+                                .span = .{ .start = 23, .end = 105 },
+                            } },
+                        },
+                        .span = .{ .start = 19, .end = 107 },
+                    },
+                    .span = .{ .start = 0, .end = 107 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 107 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\query Friends($withFriends: Boolean!) {
+        \\  ...heroFields @include(if: $withFriends)
+        \\  ... on Droid @skip(if: $withFriends) {
+        \\    primaryFunction
+        \\  }
+        \\  ... @defer {
+        \\    name
+        \\  }
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .executable = .{ .operation = .{
+                    .operation_type = .query,
+                    .name = .{
+                        .value = "Friends",
+                        .pos = .{ .value = 6 },
+                    },
+                    .variable_definitions = .{
+                        .{
+                            .variable = .{
+                                .name = .{
+                                    .value = "withFriends",
+                                    .pos = .{ .value = 15 },
+                                },
+                                .span = .{ .start = 14, .end = 26 },
+                            },
+                            .type = .{ .non_null = .{
+                                .type = .{ .named = .{ .name = .{
+                                    .value = "Boolean",
+                                    .pos = .{ .value = 28 },
+                                } } },
+                                .span = .{ .start = 28, .end = 36 },
+                            } },
+                            .default_value = null,
+                            .directives = null,
+                            .span = .{ .start = 14, .end = 36 },
+                        },
+                    },
+                    .directives = .{},
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .fragment_spread = .{
+                                .name = .{
+                                    .value = "heroFields",
+                                    .pos = .{ .value = 45 },
+                                },
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "include",
+                                            .pos = .{ .value = 57 },
+                                        },
+                                        .arguments = .{
+                                            .{
+                                                .name = .{
+                                                    .value = "if",
+                                                    .pos = .{ .value = 65 },
+                                                },
+                                                .value = .{ .variable = .{
+                                                    .name = .{
+                                                        .value = "withFriends",
+                                                        .pos = .{ .value = 70 },
+                                                    },
+                                                    .span = .{ .start = 69, .end = 81 },
+                                                } },
+                                                .span = .{ .start = 65, .end = 81 },
+                                            },
+                                        },
+                                        .span = .{ .start = 56, .end = 82 },
+                                    },
+                                },
+                                .span = .{ .start = 45, .end = 82 },
+                            } },
+                            .{ .inline_fragment = .{
+                                .type_condition = .{ .name = .{
+                                    .value = "Droid",
+                                    .pos = .{ .value = 92 },
+                                } },
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "skip",
+                                            .pos = .{ .value = 99 },
+                                        },
+                                        .arguments = .{
+                                            .{
+                                                .name = .{
+                                                    .value = "if",
+                                                    .pos = .{ .value = 104 },
+                                                },
+                                                .value = .{ .variable = .{
+                                                    .name = .{
+                                                        .value = "withFriends",
+                                                        .pos = .{ .value = 109 },
+                                                    },
+                                                    .span = .{ .start = 108, .end = 120 },
+                                                } },
+                                                .span = .{ .start = 104, .end = 120 },
+                                            },
+                                        },
+                                        .span = .{ .start = 98, .end = 121 },
+                                    },
+                                },
+                                .selection_set = .{
+                                    .selections = .{
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "primaryFunction",
+                                                .pos = .{ .value = 128 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{},
+                                            .selection_set = .{
+                                                .selections = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .span = .{ .start = 128, .end = 143 },
+                                        } },
+                                    },
+                                    .span = .{ .start = 122, .end = 147 },
+                                },
+                                .span = .{ .start = 89, .end = 147 },
+                            } },
+                            .{ .inline_fragment = .{
+                                .type_condition = null,
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "defer",
+                                            .pos = .{ .value = 155 },
+                                        },
+                                        .arguments = null,
+                                        .span = .{ .start = 154, .end = 160 },
+                                    },
+                                },
+                                .selection_set = .{
+                                    .selections = .{
+                                        .{ .field = .{
+                                            .alias = null,
+                                            .name = .{
+                                                .value = "name",
+                                                .pos = .{ .value = 167 },
+                                            },
+                                            .arguments = .{
+                                                .args = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .directives = .{},
+                                            .selection_set = .{
+                                                .selections = .{},
+                                                .span = .{ .start = 0, .end = 0 },
+                                            },
+                                            .span = .{ .start = 167, .end = 171 },
+                                        } },
+                                    },
+                                    .span = .{ .start = 161, .end = 175 },
+                                },
+                                .span = .{ .start = 154, .end = 175 },
+                            } },
+                        },
+                        .span = .{ .start = 38, .end = 177 },
+                    },
+                    .span = .{ .start = 0, .end = 177 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 177 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\fragment heroFields on Character @lowercase {
+        \\  id
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .executable = .{ .fragment = .{
+                    .name = .{
+                        .value = "heroFields",
+                        .pos = .{ .value = 9 },
+                    },
+                    .type_condition = .{ .name = .{
+                        .value = "Character",
+                        .pos = .{ .value = 23 },
+                    } },
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "lowercase",
+                                .pos = .{ .value = 34 },
+                            },
+                            .arguments = null,
+                            .span = .{ .start = 33, .end = 43 },
+                        },
+                    },
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .field = .{
+                                .alias = null,
+                                .name = .{
+                                    .value = "id",
+                                    .pos = .{ .value = 48 },
+                                },
+                                .arguments = .{
+                                    .args = .{},
+                                    .span = .{ .start = 0, .end = 0 },
+                                },
+                                .directives = .{},
+                                .selection_set = .{
+                                    .selections = .{},
+                                    .span = .{ .start = 0, .end = 0 },
+                                },
+                                .span = .{ .start = 48, .end = 50 },
+                            } },
+                        },
+                        .span = .{ .start = 44, .end = 52 },
+                    },
+                    .span = .{ .start = 0, .end = 52 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 52 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\"""
+        \\Marks an element of a GraphQL schema as no longer supported.
+        \\"""
+        \\directive @deprecated(
+        \\  "Why this element was deprecated."
+        \\  reason: String = "No longer supported"
+        \\) on FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM_VALUE | INPUT_FIELD_DEFINITION
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .directive = .{
+                    .description = .{
+                        .value = "\"\"\"\nMarks an element of a GraphQL schema as no longer supported.\n\"\"\"",
+                        .block = true,
+                        .span = .{ .start = 0, .end = 68 },
+                    },
+                    .name = .{
+                        .value = "deprecated",
+                        .pos = .{ .value = 80 },
+                    },
+                    .arguments = .{
+                        .{
+                            .description = .{
+                                .value = "\"Why this element was deprecated.\"",
+                                .block = false,
+                                .span = .{ .start = 94, .end = 128 },
+                            },
+                            .name = .{
+                                .value = "reason",
+                                .pos = .{ .value = 131 },
+                            },
+                            .type = .{ .named = .{ .name = .{
+                                .value = "String",
+                                .pos = .{ .value = 139 },
+                            } } },
+                            .default_value = .{ .string = .{
+                                .value = "\"No longer supported\"",
+                                .block = false,
+                                .span = .{ .start = 148, .end = 169 },
+                            } },
+                            .directives = .{},
+                            .span = .{ .start = 94, .end = 169 },
+                        },
+                    },
+                    .repeatable = false,
+                    .directives = .{},
+                    .locations = .{
+                        .field_definition,
+                        .argument_definition,
+                        .enum_value,
+                        .input_field_definition,
+                    },
+                    .span = .{ .start = 0, .end = 251 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 251 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\directive @tag(name: String!) repeatable on
+        \\  | FIELD
+        \\  | OBJECT
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .directive = .{
+                    .description = null,
+                    .name = .{
+                        .value = "tag",
+                        .pos = .{ .value = 11 },
+                    },
+                    .arguments = .{
+                        .{
+                            .description = null,
+                            .name = .{
+                                .value = "name",
+                                .pos = .{ .value = 15 },
+                            },
+                            .type = .{ .non_null = .{
+                                .type = .{ .named = .{ .name = .{
+                                    .value = "String",
+                                    .pos = .{ .value = 21 },
+                                } } },
+                                .span = .{ .start = 21, .end = 28 },
+                            } },
+                            .default_value = null,
+                            .directives = .{},
+                            .span = .{ .start = 15, .end = 28 },
+                        },
+                    },
+                    .repeatable = true,
+                    .directives = .{},
+                    .locations = .{
+                        .field,
+                        .object,
+                    },
+                    .span = .{ .start = 0, .end = 64 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 64 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\directive @lowercase on FIELD
+        \\
+        \\query Hero {
+        \\  ...heroFields
+        \\}
+        \\
+        \\fragment heroFields on Character {
+        \\  name @lowercase
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .directive = .{
+                    .description = null,
+                    .name = .{
+                        .value = "lowercase",
+                        .pos = .{ .value = 11 },
+                    },
+                    .arguments = null,
+                    .repeatable = false,
+                    .directives = .{},
+                    .locations = .{
+                        .field,
+                    },
+                    .span = .{ .start = 0, .end = 29 },
+                } } } },
+                .{ .executable = .{ .operation = .{
+                    .operation_type = .query,
+                    .name = .{
+                        .value = "Hero",
+                        .pos = .{ .value = 37 },
+                    },
+                    .variable_definitions = .{},
+                    .directives = .{},
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .fragment_spread = .{
+                                .name = .{
+                                    .value = "heroFields",
+                                    .pos = .{ .value = 49 },
+                                },
+                                .directives = .{},
+                                .span = .{ .start = 49, .end = 59 },
+                            } },
+                        },
+                        .span = .{ .start = 42, .end = 61 },
+                    },
+                    .span = .{ .start = 31, .end = 61 },
+                } } },
+                .{ .executable = .{ .fragment = .{
+                    .name = .{
+                        .value = "heroFields",
+                        .pos = .{ .value = 72 },
+                    },
+                    .type_condition = .{ .name = .{
+                        .value = "Character",
+                        .pos = .{ .value = 86 },
+                    } },
+                    .directives = .{},
+                    .selection_set = .{
+                        .selections = .{
+                            .{ .field = .{
+                                .alias = null,
+                                .name = .{
+                                    .value = "name",
+                                    .pos = .{ .value = 100 },
+                                },
+                                .arguments = .{
+                                    .args = .{},
+                                    .span = .{ .start = 0, .end = 0 },
+                                },
+                                .directives = .{
+                                    .{
+                                        .name = .{
+                                            .value = "lowercase",
+                                            .pos = .{ .value = 106 },
+                                        },
+                                        .arguments = null,
+                                        .span = .{ .start = 105, .end = 115 },
+                                    },
+                                },
+                                .selection_set = .{
+                                    .selections = .{},
+                                    .span = .{ .start = 0, .end = 0 },
+                                },
+                                .span = .{ .start = 100, .end = 115 },
+                            } },
+                        },
+                        .span = .{ .start = 96, .end = 117 },
+                    },
+                    .span = .{ .start = 63, .end = 117 },
+                } } },
+            },
+            .span = .{ .start = 0, .end = 117 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\"The schema of a books API."
+        \\schema @link(url: "https://specs.example.com/v1.0") {
+        \\  query: Query
+        \\  mutation: Mutation
+        \\  subscription: Subscription
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .schema = .{
+                    .description = .{
+                        .value = "\"The schema of a books API.\"",
+                        .block = false,
+                        .span = .{ .start = 0, .end = 28 },
+                    },
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "link",
+                                .pos = .{ .value = 37 },
+                            },
+                            .arguments = .{
+                                .{
+                                    .name = .{
+                                        .value = "url",
+                                        .pos = .{ .value = 42 },
+                                    },
+                                    .value = .{ .string = .{
+                                        .value = "\"https://specs.example.com/v1.0\"",
+                                        .block = false,
+                                        .span = .{ .start = 47, .end = 79 },
+                                    } },
+                                    .span = .{ .start = 42, .end = 79 },
+                                },
+                            },
+                            .span = .{ .start = 36, .end = 80 },
+                        },
+                    },
+                    .operation_types = .{
+                        .{
+                            .operation_type = .query,
+                            .type = .{ .name = .{
+                                .value = "Query",
+                                .pos = .{ .value = 92 },
+                            } },
+                            .span = .{ .start = 85, .end = 97 },
+                        },
+                        .{
+                            .operation_type = .mutation,
+                            .type = .{ .name = .{
+                                .value = "Mutation",
+                                .pos = .{ .value = 110 },
+                            } },
+                            .span = .{ .start = 100, .end = 118 },
+                        },
+                        .{
+                            .operation_type = .subscription,
+                            .type = .{ .name = .{
+                                .value = "Subscription",
+                                .pos = .{ .value = 135 },
+                            } },
+                            .span = .{ .start = 121, .end = 147 },
+                        },
+                    },
+                    .span = .{ .start = 0, .end = 149 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 149 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\schema {}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .schema = .{
+                    .description = null,
+                    .directives = .{},
+                    .operation_types = .{},
+                    .span = .{ .start = 0, .end = 9 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 9 },
+        },
+        .errors = .{
+            .{
+                .span = .{ .start = 7, .end = 9 },
+                .message = "Root operation types must have at least one item",
+            },
+        },
+    },
+    .{
+        .source =
+        \\scalar DateTime @specifiedBy(url: "https://scalars.example.com/dateTime")
+        \\
+        \\interface Node {
+        \\  id: ID!
+        \\}
+        \\
+        \\"A book, as catalogued."
+        \\type Book implements Node & Publication @key(fields: "id") {
+        \\  id: ID!
+        \\  "Localized, when a translation exists."
+        \\  title(locale: Locale = EN): String @deprecated
+        \\  tags: [String!]!
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .scalar = .{
+                    .description = null,
+                    .name = .{
+                        .value = "DateTime",
+                        .pos = .{ .value = 7 },
+                    },
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "specifiedBy",
+                                .pos = .{ .value = 17 },
+                            },
+                            .arguments = .{
+                                .{
+                                    .name = .{
+                                        .value = "url",
+                                        .pos = .{ .value = 29 },
+                                    },
+                                    .value = .{ .string = .{
+                                        .value = "\"https://scalars.example.com/dateTime\"",
+                                        .block = false,
+                                        .span = .{ .start = 34, .end = 72 },
+                                    } },
+                                    .span = .{ .start = 29, .end = 72 },
+                                },
+                            },
+                            .span = .{ .start = 16, .end = 73 },
+                        },
+                    },
+                    .span = .{ .start = 0, .end = 73 },
+                } } } },
+                .{ .type_system = .{ .definition = .{ .interface = .{
+                    .description = null,
+                    .name = .{
+                        .value = "Node",
+                        .pos = .{ .value = 85 },
+                    },
+                    .interfaces = null,
+                    .directives = .{},
+                    .fields = .{
+                        .{
+                            .description = null,
+                            .name = .{
+                                .value = "id",
+                                .pos = .{ .value = 94 },
+                            },
+                            .arguments = null,
+                            .type = .{ .non_null = .{
+                                .type = .{ .named = .{ .name = .{
+                                    .value = "ID",
+                                    .pos = .{ .value = 98 },
+                                } } },
+                                .span = .{ .start = 98, .end = 101 },
+                            } },
+                            .directives = .{},
+                            .span = .{ .start = 94, .end = 101 },
+                        },
+                    },
+                    .span = .{ .start = 75, .end = 103 },
+                } } } },
+                .{ .type_system = .{ .definition = .{ .object = .{
+                    .description = .{
+                        .value = "\"A book, as catalogued.\"",
+                        .block = false,
+                        .span = .{ .start = 105, .end = 129 },
+                    },
+                    .name = .{
+                        .value = "Book",
+                        .pos = .{ .value = 135 },
+                    },
+                    .interfaces = .{
+                        .{ .name = .{
+                            .value = "Node",
+                            .pos = .{ .value = 151 },
+                        } },
+                        .{ .name = .{
+                            .value = "Publication",
+                            .pos = .{ .value = 158 },
+                        } },
+                    },
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "key",
+                                .pos = .{ .value = 171 },
+                            },
+                            .arguments = .{
+                                .{
+                                    .name = .{
+                                        .value = "fields",
+                                        .pos = .{ .value = 175 },
+                                    },
+                                    .value = .{ .string = .{
+                                        .value = "\"id\"",
+                                        .block = false,
+                                        .span = .{ .start = 183, .end = 187 },
+                                    } },
+                                    .span = .{ .start = 175, .end = 187 },
+                                },
+                            },
+                            .span = .{ .start = 170, .end = 188 },
+                        },
+                    },
+                    .fields = .{
+                        .{
+                            .description = null,
+                            .name = .{
+                                .value = "id",
+                                .pos = .{ .value = 193 },
+                            },
+                            .arguments = null,
+                            .type = .{ .non_null = .{
+                                .type = .{ .named = .{ .name = .{
+                                    .value = "ID",
+                                    .pos = .{ .value = 197 },
+                                } } },
+                                .span = .{ .start = 197, .end = 200 },
+                            } },
+                            .directives = .{},
+                            .span = .{ .start = 193, .end = 200 },
+                        },
+                        .{
+                            .description = .{
+                                .value = "\"Localized, when a translation exists.\"",
+                                .block = false,
+                                .span = .{ .start = 203, .end = 242 },
+                            },
+                            .name = .{
+                                .value = "title",
+                                .pos = .{ .value = 245 },
+                            },
+                            .arguments = .{
+                                .{
+                                    .description = null,
+                                    .name = .{
+                                        .value = "locale",
+                                        .pos = .{ .value = 251 },
+                                    },
+                                    .type = .{ .named = .{ .name = .{
+                                        .value = "Locale",
+                                        .pos = .{ .value = 259 },
+                                    } } },
+                                    .default_value = .{ .@"enum" = .{ .value = .{
+                                        .value = "EN",
+                                        .pos = .{ .value = 268 },
+                                    } } },
+                                    .directives = .{},
+                                    .span = .{ .start = 251, .end = 270 },
+                                },
+                            },
+                            .type = .{ .named = .{ .name = .{
+                                .value = "String",
+                                .pos = .{ .value = 273 },
+                            } } },
+                            .directives = .{
+                                .{
+                                    .name = .{
+                                        .value = "deprecated",
+                                        .pos = .{ .value = 281 },
+                                    },
+                                    .arguments = null,
+                                    .span = .{ .start = 280, .end = 291 },
+                                },
+                            },
+                            .span = .{ .start = 203, .end = 291 },
+                        },
+                        .{
+                            .description = null,
+                            .name = .{
+                                .value = "tags",
+                                .pos = .{ .value = 294 },
+                            },
+                            .arguments = null,
+                            .type = .{ .non_null = .{
+                                .type = .{ .list = .{
+                                    .type = .{ .non_null = .{
+                                        .type = .{ .named = .{ .name = .{
+                                            .value = "String",
+                                            .pos = .{ .value = 301 },
+                                        } } },
+                                        .span = .{ .start = 301, .end = 308 },
+                                    } },
+                                    .span = .{ .start = 300, .end = 309 },
+                                } },
+                                .span = .{ .start = 300, .end = 310 },
+                            } },
+                            .directives = .{},
+                            .span = .{ .start = 294, .end = 310 },
+                        },
+                    },
+                    .span = .{ .start = 105, .end = 312 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 312 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\union SearchResult @shared = | Book | Author
+        \\
+        \\enum Locale @lowercase {
+        \\  "British English"
+        \\  EN @preferred
+        \\  FR
+        \\}
+        \\
+        \\input BookFilter {
+        \\  title: String = ""
+        \\  tags: [String!]
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .@"union" = .{
+                    .description = null,
+                    .name = .{
+                        .value = "SearchResult",
+                        .pos = .{ .value = 6 },
+                    },
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "shared",
+                                .pos = .{ .value = 20 },
+                            },
+                            .arguments = null,
+                            .span = .{ .start = 19, .end = 26 },
+                        },
+                    },
+                    .types = .{
+                        .{ .name = .{
+                            .value = "Book",
+                            .pos = .{ .value = 31 },
+                        } },
+                        .{ .name = .{
+                            .value = "Author",
+                            .pos = .{ .value = 38 },
+                        } },
+                    },
+                    .span = .{ .start = 0, .end = 44 },
+                } } } },
+                .{ .type_system = .{ .definition = .{ .@"enum" = .{
+                    .description = null,
+                    .name = .{
+                        .value = "Locale",
+                        .pos = .{ .value = 51 },
+                    },
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "lowercase",
+                                .pos = .{ .value = 59 },
+                            },
+                            .arguments = null,
+                            .span = .{ .start = 58, .end = 68 },
+                        },
+                    },
+                    .values = .{
+                        .{
+                            .description = .{
+                                .value = "\"British English\"",
+                                .block = false,
+                                .span = .{ .start = 73, .end = 90 },
+                            },
+                            .value = .{ .value = .{
+                                .value = "EN",
+                                .pos = .{ .value = 93 },
+                            } },
+                            .directives = .{
+                                .{
+                                    .name = .{
+                                        .value = "preferred",
+                                        .pos = .{ .value = 97 },
+                                    },
+                                    .arguments = null,
+                                    .span = .{ .start = 96, .end = 106 },
+                                },
+                            },
+                            .span = .{ .start = 73, .end = 106 },
+                        },
+                        .{
+                            .description = null,
+                            .value = .{ .value = .{
+                                .value = "FR",
+                                .pos = .{ .value = 109 },
+                            } },
+                            .directives = .{},
+                            .span = .{ .start = 109, .end = 111 },
+                        },
+                    },
+                    .span = .{ .start = 46, .end = 113 },
+                } } } },
+                .{ .type_system = .{ .definition = .{ .input_object = .{
+                    .description = null,
+                    .name = .{
+                        .value = "BookFilter",
+                        .pos = .{ .value = 121 },
+                    },
+                    .directives = .{},
+                    .fields = .{
+                        .{
+                            .description = null,
+                            .name = .{
+                                .value = "title",
+                                .pos = .{ .value = 136 },
+                            },
+                            .type = .{ .named = .{ .name = .{
+                                .value = "String",
+                                .pos = .{ .value = 143 },
+                            } } },
+                            .default_value = .{ .string = .{
+                                .value = "\"\"",
+                                .block = false,
+                                .span = .{ .start = 152, .end = 154 },
+                            } },
+                            .directives = .{},
+                            .span = .{ .start = 136, .end = 154 },
+                        },
+                        .{
+                            .description = null,
+                            .name = .{
+                                .value = "tags",
+                                .pos = .{ .value = 157 },
+                            },
+                            .type = .{ .list = .{
+                                .type = .{ .non_null = .{
+                                    .type = .{ .named = .{ .name = .{
+                                        .value = "String",
+                                        .pos = .{ .value = 164 },
+                                    } } },
+                                    .span = .{ .start = 164, .end = 171 },
+                                } },
+                                .span = .{ .start = 163, .end = 172 },
+                            } },
+                            .default_value = null,
+                            .directives = .{},
+                            .span = .{ .start = 157, .end = 172 },
+                        },
+                    },
+                    .span = .{ .start = 115, .end = 174 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 174 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\type Empty {}
+        \\
+        \\enum Reserved { true }
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .object = .{
+                    .description = null,
+                    .name = .{
+                        .value = "Empty",
+                        .pos = .{ .value = 5 },
+                    },
+                    .interfaces = null,
+                    .directives = .{},
+                    .fields = .{},
+                    .span = .{ .start = 0, .end = 13 },
+                } } } },
+                .{ .type_system = .{ .definition = .{ .@"enum" = .{
+                    .description = null,
+                    .name = .{
+                        .value = "Reserved",
+                        .pos = .{ .value = 20 },
+                    },
+                    .directives = .{},
+                    .values = .{
+                        .{
+                            .description = null,
+                            .value = .{ .value = .{
+                                .value = "true",
+                                .pos = .{ .value = 31 },
+                            } },
+                            .directives = .{},
+                            .span = .{ .start = 31, .end = 35 },
+                        },
+                    },
+                    .span = .{ .start = 15, .end = 37 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 37 },
+        },
+        .errors = .{
+            .{
+                .span = .{ .start = 11, .end = 13 },
+                .message = "Field definitions must have at least one item",
+            },
+            .{
+                .span = .{ .start = 31, .end = 35 },
+                .message = "Enum values cannot be named 'true', 'false', or 'null'",
+            },
+        },
+    },
     // .{
     //     // https://spec.graphql.org/draft/#example-916f4
     //     .source =

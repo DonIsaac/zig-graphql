@@ -13,6 +13,7 @@ pub const Kind = enum(u8) {
     // having them be separate makes parsing easier.
     name,
     kw_directive,
+    kw_repeatable,
     kw_enum,
     kw_extend,
     kw_false,

@@ -32,12 +32,60 @@ pub const nameContinueChars: []const u8 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZa
 pub fn isKeywordWithoutFirstChar(lexer: *LexerImpl, comptime kws: anytype) ?Token.Kind {
     inline for (kws) |kw| {
         const suffix, const kind = kw;
-        if (mem.startsWith(u8, lexer.remaining(), suffix)) {
+        const rest = lexer.remaining();
+        // a keyword only ends where a name would; `types` is a name, not `type`
+        // followed by `s`
+        if (mem.startsWith(u8, rest, suffix) and
+            (rest.len == suffix.len or !isNameContinue(rest[suffix.len])))
+        {
             lexer.advanceBy(@intCast(suffix.len));
             return kind;
         }
     }
     return null;
+}
+
+test isKeywordWithoutFirstChar {
+    // the `t` handler's keywords, minus the `t` its caller has consumed
+    const kws = [_]struct { []const u8, Token.Kind }{
+        .{ "ype", .kw_type },
+        .{ "rue", .kw_true },
+    };
+
+    const Case = struct { src: []const u8, expected: ?Token.Kind = null };
+    for ([_]Case{
+        .{ .src = "type", .expected = .kw_type },
+        .{ .src = "true", .expected = .kw_true },
+        .{ .src = "type!", .expected = .kw_type },
+        .{ .src = "type ", .expected = .kw_type },
+        // a keyword ends where a name would, so these are all names
+        .{ .src = "types" },
+        .{ .src = "type_" },
+        .{ .src = "type1" },
+        .{ .src = "truely" },
+        // no keyword to match in the first place
+        .{ .src = "t" },
+        .{ .src = "typ" },
+        .{ .src = "tea" },
+    }) |case| {
+        var lexer = LexerImpl.init(std.testing.allocator, case.src);
+        defer lexer.deinit();
+        lexer.bump(); // callers have already consumed the first character
+
+        errdefer std.debug.print("Test failed for case: '{s}'\n", .{case.src});
+        try std.testing.expectEqual(case.expected, isKeywordWithoutFirstChar(&lexer, &kws));
+
+        if (case.expected) |kind| {
+            // the whole keyword got consumed
+            const suffix = for (kws) |kw| {
+                if (kw[1] == kind) break kw[0];
+            } else return error.KindNotInKeywordTable;
+            try std.testing.expectEqualStrings(suffix, case.src[1..lexer._cur]);
+        } else {
+            // nothing past the first character, leaving it to the name lexer
+            try std.testing.expectEqual(1, lexer._cur);
+        }
+    }
 }
 
 test nameContinueChars {
