@@ -20,13 +20,12 @@ pub fn parseNamedType(self: *ParserImpl) ParserImpl.Error!Ast.Type.Named {
 
 /// `[Type]`
 fn parseListType(self: *ParserImpl) ParserImpl.Error!Ast.Type.List {
-    try self.expect(.l_bracket);
     const start = self.startSpan();
+    try self.expect(.l_bracket);
     const ty = try parseType(self);
-    const span = self.endSpan(start);
     try self.expect(.r_bracket);
 
-    return Ast.Type.List{ .type = ty, .span = span };
+    return Ast.Type.List{ .type = ty, .span = self.endSpan(start) };
 }
 
 fn parseNamedOrListType(p: *ParserImpl) ParserImpl.Error!Ast.Type {
@@ -55,10 +54,7 @@ test parseListType {
         return e;
     };
     try t.expect(ty.type == .named);
-    try t.expectEqual(
-        Span{ .start = 1, .end = 5 }, // FIXME: should be 4. Same bug as "Int]"
-        ty.type.named.name.span(),
-    );
-    // FIXME: Should be "Int"
-    try t.expectEqualStrings("Int]", ty.type.named.name.value);
+    try t.expectEqual(Span{ .start = 0, .end = 5 }, ty.span); // brackets included
+    try t.expectEqual(Span{ .start = 1, .end = 4 }, ty.type.named.name.span());
+    try t.expectEqualStrings("Int", ty.type.named.name.value);
 }

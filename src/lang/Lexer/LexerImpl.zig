@@ -187,19 +187,13 @@ pub fn fatalError(
     fatal: Error,
     comptime message: []const u8,
     args: anytype,
-) callconv(util.callconv_inline) Token.Kind {
+) Token.Kind {
     @branchHint(.cold);
 
     std.debug.assert(self.fatal_error == null);
     self.fatal_error = fatal;
 
-    const msg: []const u8 = if (comptime args.len == 0)
-        message
-    else
-        std.fmt.allocPrint(self.allocator, message, args) catch unreachable;
-
-    const diag = Diagnostic.init(self.span(), msg);
-    self.errors.append(self.allocator, diag) catch unreachable;
+    self.err(message, args);
     self._cur = @intCast(self.source.len);
     if (util.is_debug) {
         self.tok = Token.empty;
@@ -214,7 +208,7 @@ pub fn err(
     self: *LexerImpl,
     comptime message: []const u8,
     args: anytype,
-) callconv(util.callconv_inline) void {
+) void {
     @branchHint(.cold);
 
     const msg: []const u8 = if (comptime args.len == 0)

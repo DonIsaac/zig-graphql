@@ -9,10 +9,10 @@ const definitions = @import("definitions.zig");
 pub fn parseDocument(p: *ParserImpl, comptime executable_only: bool) !Ast.Document {
     // p.bump();
     const start = p.startSpan();
-    var defs = try p.ast.list(Ast.Definition, 1);
+    var defs = try p.ast.list(Ast.Document.Definition, 1);
     while (try p.nextToken()) |t| {
         util.debugAssert(t.eql(p.cur));
-        const def: Ast.Definition = if (comptime executable_only)
+        const def: Ast.Document.Definition = if (comptime executable_only)
             .{ .executable = try definitions.parseExecutableDefinition(p) }
         else
             try definitions.parseDefinition(p);

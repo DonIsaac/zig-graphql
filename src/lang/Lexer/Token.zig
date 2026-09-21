@@ -102,8 +102,19 @@ pub const Kind = enum(u8) {
 pub fn eql(self: Token, other: Token) bool {
     return self.kind == other.kind and self.span.eql(other.span);
 }
+
 pub fn startOffset(tok: Token) Span.Offset {
     return tok.span.offset(.Start);
 }
 
+const std = @import("std");
 const Span = @import("../../Span.zig");
+
+test eql {
+    const tok: Token = .{ .kind = .kw_enum, .span = .init(0, 4) };
+    try std.testing.expect(tok.eql(tok));
+
+    var other = tok;
+    other.kind = .kw_true;
+    try std.testing.expect(!tok.eql(other));
+}

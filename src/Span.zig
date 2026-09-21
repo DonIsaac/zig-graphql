@@ -88,13 +88,15 @@ pub fn spannedT(comptime T: type, thing: T) Span {
     };
 }
 
-pub const Offset = enum(u32) {
-    _,
+/// A single position within source text.
+pub const Offset = struct {
+    value: u32,
+
     pub inline fn init(value: u32) Offset {
-        return @enumFromInt(value);
+        return .{ .value = value };
     }
     pub inline fn valueOf(self: Offset) u32 {
-        return @intFromEnum(self);
+        return self.value;
     }
 
     pub inline fn spanSized(self: Offset, size: u32) Span {

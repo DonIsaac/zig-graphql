@@ -1,6 +1,8 @@
 //! GraphQL AST data structure
 const Span = @import("../Span.zig");
 
+pub const Builder = @import("Ast/Builder.zig");
+
 /// Represents a complete GraphQL document
 ///
 /// ## References
@@ -8,6 +10,12 @@ const Span = @import("../Span.zig");
 pub const Document = struct {
     definitions: []Definition,
     span: Span,
+
+    /// A definition in a GraphQL document
+    pub const Definition = union(enum) {
+        executable: Executable.Definition,
+        type_system: TypeSystem.DefinitionOrExtension,
+    };
 
     pub fn isExecutable(self: *const Document) bool {
         if (self.definitions.len == 0) return false;
@@ -20,60 +28,52 @@ pub const Document = struct {
         }
         return has_operation;
     }
+};
 
+pub const Executable = struct {
     /// An executable document
-    pub const Executable = struct {
-        definitions: []ExecutableDefinition,
+    pub const Document = struct {
+        definitions: []Executable.Definition,
         span: Span,
 
-        pub fn isExecutable(self: *const Executable) bool {
+        pub fn isExecutable(self: *const Executable.Document) bool {
             return self.definitions.len > 0 and for (self.definitions) |def| blk: {
                 if (def == .operation) break :blk true;
             } else false;
         }
     };
 
-    /// A type system document
-    pub const TypeSystem = struct {
-        definitions: []TypeSystemDefinitionOrExtension,
-        span: Span,
+    /// An executable definition (operation or fragment)
+    pub const Definition = union(enum) {
+        operation: Operation.Definition,
+        fragment: Fragment.Definition,
     };
-};
-
-/// A definition in a GraphQL document
-pub const Definition = union(enum) {
-    executable: ExecutableDefinition,
-    type_system: TypeSystemDefinitionOrExtension,
-};
-
-/// An executable definition (operation or fragment)
-pub const ExecutableDefinition = union(enum) {
-    operation: OperationDefinition,
-    fragment: FragmentDefinition,
 };
 
 /// A GraphQL operation (query, mutation, or subscription)
 ///
 /// ## References
 /// - [2.3 Operations](https://spec.graphql.org/draft/#sec-Language.Operations)
-pub const OperationDefinition = struct {
-    operation_type: OperationType,
-    name: ?Name,
-    variable_definitions: []VariableDefinition,
-    directives: []Directive,
-    selection_set: Selection.Set,
-    span: Span,
-};
+pub const Operation = struct {
+    pub const Definition = struct {
+        operation_type: Operation.Type,
+        name: ?Name,
+        variable_definitions: []Variable.Definition,
+        directives: []Directive,
+        selection_set: Selection.Set,
+        span: Span,
+    };
 
-/// The type of operation
-pub const OperationType = enum {
-    /// A read-only fetch
-    query,
-    /// A write followed by a fetch
-    mutation,
-    /// A long-lived request that fetches data in response to a sequence of
-    /// events over time
-    subscription,
+    /// The type of operation
+    pub const Type = enum {
+        /// A read-only fetch
+        query,
+        /// A write followed by a fetch
+        mutation,
+        /// A long-lived request that fetches data in response to a sequence of
+        /// events over time
+        subscription,
+    };
 };
 
 /// A selection in a selection set
@@ -82,7 +82,7 @@ pub const OperationType = enum {
 /// - [2.4 Selection Sets](https://spec.graphql.org/draft/#sec-Selection-Sets)
 pub const Selection = union(enum) {
     field: Field,
-    fragment_spread: FragmentSpread,
+    fragment_spread: Fragment.Spread,
     inline_fragment: InlineFragment,
 
     /// A selection set defines an ordered set of selections (fields, fragment
@@ -110,13 +110,6 @@ pub const Selection = union(enum) {
         span: Span,
     };
 
-    /// A fragment spread
-    pub const FragmentSpread = struct {
-        name: Name,
-        directives: []Directive,
-        span: Span,
-    };
-
     /// An inline fragment
     pub const InlineFragment = struct {
         type_condition: ?Type.Named,
@@ -126,28 +119,37 @@ pub const Selection = union(enum) {
     };
 };
 
-/// A fragment definition
-pub const FragmentDefinition = struct {
-    name: Name,
-    type_condition: Type.Named,
-    directives: ?[]Directive,
-    selection_set: Selection.Set,
-    span: Span,
-};
+pub const Fragment = struct {
+    /// A fragment definition
+    pub const Definition = struct {
+        name: Name,
+        type_condition: Type.Named,
+        directives: ?[]Directive,
+        selection_set: Selection.Set,
+        span: Span,
+    };
 
-/// A variable definition
-pub const VariableDefinition = struct {
-    variable: Variable,
-    type: Type,
-    default_value: ?Value,
-    directives: ?[]Directive,
-    span: Span,
+    /// A fragment spread
+    pub const Spread = struct {
+        name: Name,
+        directives: []Directive,
+        span: Span,
+    };
 };
 
 /// A variable reference
 pub const Variable = struct {
     name: Name,
     span: Span,
+
+    /// A variable definition
+    pub const Definition = struct {
+        variable: Variable,
+        type: Type,
+        default_value: ?Value,
+        directives: ?[]Directive,
+        span: Span,
+    };
 };
 
 /// A field argument
@@ -171,10 +173,49 @@ pub const Argument = struct {
 };
 
 /// A directive
+///
+/// ## Reference
+/// - [2.13 Directives](https://spec.graphql.org/draft/#sec-Language.Directives)
 pub const Directive = struct {
     name: Name,
     arguments: ?[]Argument,
     span: Span,
+
+    /// Directive definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        arguments: ?[]InputValueDefinition,
+        repeatable: bool,
+        locations: []Location,
+        span: Span,
+
+        /// Directive location
+        pub const Location = enum {
+            // Executable directive locations
+            query,
+            mutation,
+            subscription,
+            field,
+            fragment_definition,
+            fragment_spread,
+            inline_fragment,
+            variable_definition,
+
+            // Type system directive locations
+            schema,
+            scalar,
+            object,
+            field_definition,
+            argument_definition,
+            interface,
+            @"union",
+            @"enum",
+            enum_value,
+            input_object,
+            input_field_definition,
+        };
+    };
 };
 
 /// A GraphQL value
@@ -295,170 +336,200 @@ pub const Name = struct {
     }
 };
 
-/// Type system definitions and extensions
-pub const TypeSystemDefinitionOrExtension = union(enum) {
-    definition: TypeSystemDefinition,
-    extension: TypeSystemExtension,
+pub const TypeSystem = struct {
+    /// A type system document
+    pub const Document = struct {
+        definitions: []TypeSystem.Definition,
+        span: Span,
+    };
+    pub const ExtensionDocument = struct {
+        definitions: []TypeSystem.DefinitionOrExtension,
+        span: Span,
+    };
+
+    /// Type system definitions and extensions
+    pub const DefinitionOrExtension = union(enum) {
+        definition: TypeSystem.Definition,
+        extension: TypeSystem.Extension,
+    };
+
+    /// Type system definitions
+    pub const Definition = union(enum) {
+        schema: Schema.Definition,
+        scalar: ScalarType.Definition,
+        object: ObjectType.Definition,
+        interface: InterfaceType.Definition,
+        @"union": UnionType.Definition,
+        @"enum": EnumType.Definition,
+        input_object: InputObjectType.Definition,
+        directive: Directive.Definition,
+    };
+
+    /// Type system extensions
+    pub const Extension = union(enum) {
+        schema: Schema.Extension,
+        scalar: ScalarType.Extension,
+        object: ObjectType.Extension,
+        interface: InterfaceType.Extension,
+        @"union": UnionType.Extension,
+        @"enum": EnumType.Extension,
+        input_object: InputObjectType.Extension,
+    };
 };
 
-/// Type system definitions
-pub const TypeSystemDefinition = union(enum) {
-    schema: SchemaDefinition,
-    scalar: ScalarTypeDefinition,
-    object: ObjectTypeDefinition,
-    interface: InterfaceTypeDefinition,
-    @"union": UnionTypeDefinition,
-    @"enum": EnumTypeDefinition,
-    input_object: InputObjectTypeDefinition,
-    directive: DirectiveDefinition,
+/// ### References
+/// - [3.3 Schema](https://spec.graphql.org/draft/#sec-Schema)
+pub const Schema = struct {
+    /// Schema definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        directives: ?[]Directive,
+        operation_types: []RootOperationTypeDefinition,
+        span: Span,
+    };
+
+    /// Schema extension
+    pub const Extension = struct {
+        directives: ?[]Directive,
+        operation_types: ?[]RootOperationTypeDefinition,
+        span: Span,
+    };
+
+    /// [Root operation type definition](https://spec.graphql.org/draft/#RootOperationTypeDefinition)
+    pub const RootOperationTypeDefinition = struct {
+        operation_type: Operation.Type,
+        type: Type.Named,
+        span: Span,
+    };
 };
 
-/// Type system extensions
-pub const TypeSystemExtension = union(enum) {
-    schema: SchemaExtension,
-    scalar: ScalarTypeExtension,
-    object: ObjectTypeExtension,
-    interface: InterfaceTypeExtension,
-    @"union": UnionTypeExtension,
-    @"enum": EnumTypeExtension,
-    input_object: InputObjectTypeExtension,
+pub const ScalarType = struct {
+    /// Scalar type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        directives: ?[]Directive,
+        span: Span,
+    };
+
+    /// Scalar type extension
+    pub const Extension = struct {
+        name: Name,
+        directives: ?[]Directive,
+        span: Span,
+    };
 };
 
-/// Schema definition
-pub const SchemaDefinition = struct {
-    description: ?Value.String,
-    directives: ?[]Directive,
-    operation_types: []RootOperationTypeDefinition,
-    span: Span,
+/// Object type
+///
+/// ## References
+/// - [3.6 Objects](https://spec.graphql.org/draft/#sec-Objects)
+pub const ObjectType = struct {
+    /// Object type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        interfaces: ?[]Type.Named,
+        directives: ?[]Directive,
+        fields: ?[]FieldDefinition,
+        span: Span,
+    };
+
+    /// Object type extension
+    pub const Extension = struct {
+        name: Name,
+        interfaces: ?[]Type.Named,
+        directives: ?[]Directive,
+        fields: ?[]FieldDefinition,
+        span: Span,
+    };
 };
 
-/// Schema extension
-pub const SchemaExtension = struct {
-    directives: ?[]Directive,
-    operation_types: ?[]RootOperationTypeDefinition,
-    span: Span,
+pub const InterfaceType = struct {
+    /// Interface type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        interfaces: ?[]Type.Named,
+        directives: ?[]Directive,
+        fields: ?[]FieldDefinition,
+        span: Span,
+    };
+    /// Interface type extension
+    pub const Extension = struct {
+        name: Name,
+        interfaces: ?[]Type.Named,
+        directives: ?[]Directive,
+        fields: ?[]FieldDefinition,
+        span: Span,
+    };
 };
 
-/// Root operation type definition
-pub const RootOperationTypeDefinition = struct {
-    operation_type: OperationType,
-    type: Type.Named,
-    span: Span,
+pub const UnionType = struct {
+    /// Union type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        directives: ?[]Directive,
+        types: ?[]Type.Named,
+        span: Span,
+    };
+
+    /// Union type extension
+    pub const Extension = struct {
+        name: Name,
+        directives: ?[]Directive,
+        types: ?[]Type.Named,
+        span: Span,
+    };
 };
 
-/// Scalar type definition
-pub const ScalarTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    directives: ?[]Directive,
-    span: Span,
+pub const EnumType = struct {
+    /// Enum type definition
+    /// TODO: parse
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        directives: ?[]Directive,
+        values: ?[]EnumValueDefinition,
+        span: Span,
+    };
+
+    /// Enum type extension
+    pub const Extension = struct {
+        name: Name,
+        directives: ?[]Directive,
+        values: ?[]EnumValueDefinition,
+        span: Span,
+    };
 };
 
-/// Scalar type extension
-pub const ScalarTypeExtension = struct {
-    name: Name,
-    directives: ?[]Directive,
-    span: Span,
-};
+/// Input object type
+///
+/// A GraphQL _Input Object_ defines a set of input fields; the input fields are
+/// scalars, enums, other input objects, or any wrapping type whose underlying
+/// base type is one of those three. This allows arguments to accept arbitrarily
+/// complex structs.
+///
+/// ## References
+/// - [3.10 Input Objects](https://spec.graphql.org/draft/#sec-Input-Objects)
+pub const InputObjectType = struct {
+    /// Input object type definition
+    pub const Definition = struct {
+        description: ?Value.String,
+        name: Name,
+        directives: ?[]Directive,
+        fields: ?[]InputValueDefinition,
+        span: Span,
+    };
 
-/// Object type definition
-pub const ObjectTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    interfaces: ?[]Type.Named,
-    directives: ?[]Directive,
-    fields: ?[]FieldDefinition,
-    span: Span,
-};
-
-/// Object type extension
-pub const ObjectTypeExtension = struct {
-    name: Name,
-    interfaces: ?[]Type.Named,
-    directives: ?[]Directive,
-    fields: ?[]FieldDefinition,
-    span: Span,
-};
-
-/// Interface type definition
-pub const InterfaceTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    interfaces: ?[]Type.Named,
-    directives: ?[]Directive,
-    fields: ?[]FieldDefinition,
-    span: Span,
-};
-
-/// Interface type extension
-pub const InterfaceTypeExtension = struct {
-    name: Name,
-    interfaces: ?[]Type.Named,
-    directives: ?[]Directive,
-    fields: ?[]FieldDefinition,
-    span: Span,
-};
-
-/// Union type definition
-pub const UnionTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    directives: ?[]Directive,
-    types: ?[]Type.Named,
-    span: Span,
-};
-
-/// Union type extension
-pub const UnionTypeExtension = struct {
-    name: Name,
-    directives: ?[]Directive,
-    types: ?[]Type.Named,
-    span: Span,
-};
-
-/// Enum type definition
-/// TODO: parse
-pub const EnumTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    directives: ?[]Directive,
-    values: ?[]EnumValueDefinition,
-    span: Span,
-};
-
-/// Enum type extension
-pub const EnumTypeExtension = struct {
-    name: Name,
-    directives: ?[]Directive,
-    values: ?[]EnumValueDefinition,
-    span: Span,
-};
-
-/// Input object type definition
-pub const InputObjectTypeDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    directives: ?[]Directive,
-    fields: ?[]InputValueDefinition,
-    span: Span,
-};
-
-/// Input object type extension
-pub const InputObjectTypeExtension = struct {
-    name: Name,
-    directives: ?[]Directive,
-    fields: ?[]InputValueDefinition,
-    span: Span,
-};
-
-/// Directive definition
-pub const DirectiveDefinition = struct {
-    description: ?Value.String,
-    name: Name,
-    arguments: ?[]InputValueDefinition,
-    repeatable: bool,
-    locations: []DirectiveLocation,
-    span: Span,
+    /// Input object type extension
+    pub const Extension = struct {
+        name: Name,
+        directives: ?[]Directive,
+        fields: ?[]InputValueDefinition,
+        span: Span,
+    };
 };
 
 /// Field definition
@@ -487,30 +558,4 @@ pub const EnumValueDefinition = struct {
     value: Value.Enum,
     directives: ?[]Directive,
     span: Span,
-};
-
-/// Directive location
-pub const DirectiveLocation = enum {
-    // Executable directive locations
-    query,
-    mutation,
-    subscription,
-    field,
-    fragment_definition,
-    fragment_spread,
-    inline_fragment,
-    variable_definition,
-
-    // Type system directive locations
-    schema,
-    scalar,
-    object,
-    field_definition,
-    argument_definition,
-    interface,
-    @"union",
-    @"enum",
-    enum_value,
-    input_object,
-    input_field_definition,
 };
