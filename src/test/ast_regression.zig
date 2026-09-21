@@ -108,12 +108,34 @@ test "ast regression" {
 
     try std.Io.Dir.cwd().writeFile(io, .{
         .sub_path = snapshot_path,
-        .data = try record(alloc, actual.items),
+        .data = try record(alloc, actual.items, trailingRawBlock(snapshot_source)),
     });
     std.debug.print("re-recorded {s}\n", .{snapshot_path});
 }
 
-fn record(gpa: Allocator, cases: []const TestCase) ![]u8 {
+/// The snapshot file may end with a block of commented-out cases: sources
+/// parked until the parser can handle them. Re-recording rebuilds the file from
+/// the cases that were parsed, which would drop them, so the block is carried
+/// through verbatim.
+///
+/// Returns the parked lines, without the newlines that bound them, or an empty
+/// slice when the file ends with a case.
+fn trailingRawBlock(source: [:0]const u8) []const u8 {
+    const body = std.mem.trimEnd(u8, source, &std.ascii.whitespace);
+    if (!std.mem.endsWith(u8, body, "\n}")) return "";
+
+    const block_end = body.len - 2; // the newline before the closing `}`
+    var block_start = block_end;
+    while (std.mem.lastIndexOfScalar(u8, body[0..block_start], '\n')) |newline| {
+        const line = std.mem.trim(u8, body[newline + 1 .. block_start], &std.ascii.whitespace);
+        if (line.len > 0 and !std.mem.startsWith(u8, line, "//")) break;
+        block_start = newline;
+    }
+
+    return if (block_start < block_end) body[block_start + 1 .. block_end] else "";
+}
+
+fn record(gpa: Allocator, cases: []const TestCase, trailing: []const u8) ![]u8 {
     var out: std.Io.Writer.Allocating = .init(gpa);
     errdefer out.deinit();
 
@@ -137,6 +159,14 @@ fn record(gpa: Allocator, cases: []const TestCase) ![]u8 {
         try obj.end();
     }
     try tuple.end();
+
+    if (trailing.len > 0) {
+        // reopen the tuple to splice the parked block in above its closing `}`
+        std.debug.assert(out.writer.buffered()[out.writer.end - 1] == '}');
+        out.writer.end -= 1;
+        try out.writer.writeAll(trailing);
+        try out.writer.writeAll("\n}");
+    }
     try out.writer.writeByte('\n');
 
     return out.toOwnedSlice();

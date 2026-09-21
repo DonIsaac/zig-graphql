@@ -724,6 +724,101 @@
         },
         .errors = .{},
     },
+    .{
+        .source =
+        \\"The schema of a books API."
+        \\schema @link(url: "https://specs.example.com/v1.0") {
+        \\  query: Query
+        \\  mutation: Mutation
+        \\  subscription: Subscription
+        \\}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .schema = .{
+                    .description = .{
+                        .value = "\"The schema of a books API.\"",
+                        .block = false,
+                        .span = .{ .start = 0, .end = 28 },
+                    },
+                    .directives = .{
+                        .{
+                            .name = .{
+                                .value = "link",
+                                .pos = .{ .value = 37 },
+                            },
+                            .arguments = .{
+                                .{
+                                    .name = .{
+                                        .value = "url",
+                                        .pos = .{ .value = 42 },
+                                    },
+                                    .value = .{ .string = .{
+                                        .value = "\"https://specs.example.com/v1.0\"",
+                                        .block = false,
+                                        .span = .{ .start = 47, .end = 79 },
+                                    } },
+                                    .span = .{ .start = 42, .end = 79 },
+                                },
+                            },
+                            .span = .{ .start = 36, .end = 80 },
+                        },
+                    },
+                    .operation_types = .{
+                        .{
+                            .operation_type = .query,
+                            .type = .{ .name = .{
+                                .value = "Query",
+                                .pos = .{ .value = 92 },
+                            } },
+                            .span = .{ .start = 85, .end = 97 },
+                        },
+                        .{
+                            .operation_type = .mutation,
+                            .type = .{ .name = .{
+                                .value = "Mutation",
+                                .pos = .{ .value = 110 },
+                            } },
+                            .span = .{ .start = 100, .end = 118 },
+                        },
+                        .{
+                            .operation_type = .subscription,
+                            .type = .{ .name = .{
+                                .value = "Subscription",
+                                .pos = .{ .value = 135 },
+                            } },
+                            .span = .{ .start = 121, .end = 147 },
+                        },
+                    },
+                    .span = .{ .start = 0, .end = 149 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 149 },
+        },
+        .errors = .{},
+    },
+    .{
+        .source =
+        \\schema {}
+        ,
+        .ast = .{
+            .definitions = .{
+                .{ .type_system = .{ .definition = .{ .schema = .{
+                    .description = null,
+                    .directives = .{},
+                    .operation_types = .{},
+                    .span = .{ .start = 0, .end = 9 },
+                } } } },
+            },
+            .span = .{ .start = 0, .end = 9 },
+        },
+        .errors = .{
+            .{
+                .span = .{ .start = 7, .end = 9 },
+                .message = "Root operation types must have at least one item",
+            },
+        },
+    },
     // .{
     //     // https://spec.graphql.org/draft/#example-916f4
     //     .source =

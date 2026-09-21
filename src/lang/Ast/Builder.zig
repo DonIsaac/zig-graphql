@@ -105,10 +105,7 @@ pub fn @"type"(self: *const Builder, ty: anytype) Allocator.Error!Ast.Type {
         Ast.Type.Named => Ast.Type{ .named = try self.alloc(ty) },
         Ast.Type.NonNull => Ast.Type{ .non_null = try self.alloc(ty) },
         Ast.Type => ty,
-        else => {
-            @branchHint(.cold);
-            @compileError("unsupported type node: " ++ @typeName(@TypeOf(ty)));
-        },
+        else => @compileError("unsupported type node: " ++ @typeName(@TypeOf(ty))),
     };
 }
 

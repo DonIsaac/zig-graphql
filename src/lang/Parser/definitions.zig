@@ -137,7 +137,6 @@ fn parseSelectionSet(
 
     // early check for `{}`
     if (try p.eat(.r_curly)) |_| {
-        @branchHint(.cold);
         p.report(diagnostics.listCannotBeEmpty("Field Selections", p.endSpan(start)));
     }
 
@@ -335,10 +334,8 @@ fn parseDirectiveLocations(p: *ParserImpl) ParserImpl.Error![]Ast.Directive.Defi
 ///     DirectiveLocation : ExecutableDirectiveLocation | TypeSystemDirectiveLocation
 fn parseDirectiveLocation(p: *ParserImpl) ParserImpl.Error!Ast.Directive.Definition.Location {
     const tok = try p.expectWithoutAdvance(.name);
-    const location = directive_locations.get(p.ast.slice(tok)) orelse {
-        @branchHint(.cold);
+    const location = directive_locations.get(p.ast.slice(tok)) orelse
         return p.reportFatal(error.UnexpectedToken, diagnostics.unknownDirectiveLocation(tok));
-    };
     try p.bump();
     return location;
 }
@@ -387,9 +384,7 @@ fn parseTypeSystemDefinition(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.Def
     const start = p.startSpan();
     const description = try parseDescription(p);
     switch (p.cur.kind) {
-        .kw_schema => {
-            @panic("todo: SchemaDefinition");
-        },
+        .kw_schema => return .{ .schema = try parseSchemaDefinition(p, description, start) },
         .kw_type => {
             @panic("todo: TypeDefinition");
         },
@@ -420,6 +415,42 @@ fn parseTypeSystemDefinition(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.Def
     @panic("todo");
 }
 
+///     SchemaDefinition :
+///         Description? `schema` Directives[Const]? `{` RootOperationTypeDefinition+ `}`
+///
+/// `description` and `start` come from `parseTypeSystemDefinition`, which has
+/// already consumed the description this definition's span starts at.
+fn parseSchemaDefinition(
+    p: *ParserImpl,
+    description: ?Ast.Value.String,
+    start: u32,
+) ParserImpl.Error!Ast.Schema.Definition {
+    try p.assert(.kw_schema);
+
+    const directives = try parseConstDirectives(p);
+    const operations_start = p.startSpan();
+    _ = try p.expect(.l_curly);
+
+    // a schema has at most one root operation type per operation type
+    var operation_types = try p.ast.list(Ast.Schema.RootOperationTypeDefinition, @typeInfo(Ast.Operation.Type).@"enum".fields.len);
+    while (try p.eat(.r_curly) == null) {
+        const operation_type = try parseRootOperationTypeDefinition(p);
+        try operation_types.append(p.allocator(), operation_type);
+        _ = try p.eat(.comma);
+    }
+
+    if (operation_types.items.len == 0) {
+        p.report(diagnostics.listCannotBeEmpty("Root operation types", p.endSpan(operations_start)));
+    }
+
+    return Ast.Schema.Definition{
+        .description = description,
+        .directives = directives,
+        .operation_types = try p.ast.intoSlice(Ast.Schema.RootOperationTypeDefinition, &operation_types),
+        .span = p.endSpan(start),
+    };
+}
+
 fn parseTypeSystemExtension(p: *ParserImpl) ParserImpl.Error!Ast.TypeSystem.Extension {
     _ = p;
     @panic("todo: TypeSystemExtension");
@@ -439,7 +470,6 @@ fn parseArgumentsDefinition(p: *ParserImpl) ParserImpl.Error![]Ast.InputValueDef
     }
 
     if (definitions.items.len == 0) {
-        @branchHint(.cold);
         p.report(diagnostics.listCannotBeEmpty("Argument definitions", p.endSpan(start)));
     }
 
@@ -476,10 +506,10 @@ fn parseDescription(p: *ParserImpl) !?Ast.Value.String {
 
 ///     RootOperationTypeDefinition:
 ///         OperationType `:` NamedType
-fn parseRootOperationTypeDefinition(p: *ParserImpl) !Ast.Schema.RootOperationTypeDefinition {
+fn parseRootOperationTypeDefinition(p: *ParserImpl) ParserImpl.Error!Ast.Schema.RootOperationTypeDefinition {
     const start = p.startSpan();
     const op_type = try parseOperationType(p);
-    try p.expect(.colon);
+    _ = try p.expect(.colon);
     const ty = try types.parseNamedType(p);
 
     return .{ .operation_type = op_type, .type = ty, .span = p.endSpan(start) };
